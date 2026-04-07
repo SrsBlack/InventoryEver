@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { useColors } from '../../hooks/useColors';
 
 type ExpiryOption = { label: string; hours: number };
@@ -268,7 +269,7 @@ export default function InviteScreen() {
           <ActivityIndicator color={colors.primary} size="large" style={styles.spinner} />
         ) : (
           <>
-            {activeInvites.length > 0 && (
+            {activeInvites.length > 0 ? (
               <>
                 <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
                   ACTIVE CODES ({activeInvites.length})
@@ -285,6 +286,12 @@ export default function InviteScreen() {
                   />
                 ))}
               </>
+            ) : (
+              <EmptyState
+                icon="🔗"
+                title="No invite codes yet"
+                description="Generate one above to invite team members to this workspace."
+              />
             )}
 
             {expiredInvites.length > 0 && (
@@ -305,15 +312,6 @@ export default function InviteScreen() {
                   />
                 ))}
               </>
-            )}
-
-            {invites.length === 0 && (
-              <View style={styles.emptyState}>
-                <Ionicons name="link-outline" size={48} color={colors.gray300} />
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  No invite codes yet. Generate one above to share access.
-                </Text>
-              </View>
             )}
           </>
         )}
@@ -489,11 +487,4 @@ const styles = StyleSheet.create({
   },
   actionBtnText: { fontSize: 13, fontWeight: '600' },
   spinner: { marginVertical: 32 },
-  emptyState: { alignItems: 'center', paddingVertical: 48, gap: 12 },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
-    maxWidth: 260,
-    lineHeight: 20,
-  },
 });

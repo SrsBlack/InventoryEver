@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { analytics } from '../lib/analytics';
+import {
+  initializePurchases,
+  purchaseProduct,
+  restorePurchases as rcRestorePurchases,
+  checkEntitlement,
+} from '../lib/purchases';
+import { Config } from '../constants/config';
 import type { SubscriptionTier, TierLimits } from '../types';
 import { TIER_LIMITS } from '../types';
 
@@ -32,6 +39,12 @@ export function useSubscription(userId: string | undefined) {
   useEffect(() => {
     fetchTier();
   }, [fetchTier]);
+
+  // Initialize RevenueCat once a userId is available
+  useEffect(() => {
+    if (!userId) return;
+    initializePurchases();
+  }, [userId]);
 
   const limits: TierLimits = TIER_LIMITS[tier];
 
@@ -78,28 +91,88 @@ export function useSubscription(userId: string | undefined) {
     [userId]
   );
 
-  /**
-   * Purchase Pro — requires RevenueCat SDK integration.
-   * TODO: Install react-native-purchases, configure with Config.revenueCatApiKey,
-   * then replace this body with:
-   *   const { customerInfo } = await Purchases.purchaseProduct(Config.revenueCatProMonthly);
-   *   if (customerInfo.entitlements.active[Config.entitlementPro]) { ... }
-   */
+  const updateTierFromEntitlements = useCallback(
+    async (customerInfo: Awaited<ReturnType<typeof import('../lib/purchases').getCustomerInfo>>) => {
+      if (!userId || !customerInfo) return;
+
+      let newTier: SubscriptionTier = 'free';
+      if (checkEntitlement(customerInfo, Config.entitlementBusiness)) {
+        newTier = 'business';
+      } else if (checkEntitlement(customerInfo, Config.entitlementPro)) {
+        newTier = 'pro';
+      }
+
+      await supabase
+        .from('profiles')
+        .update({ subscription_tier: newTier, subscription_status: newTier === 'free' ? 'inactive' : 'active' })
+        .eq('id', userId);
+
+      setTier(newTier);
+    },
+    [userId]
+  );
+
   const purchasePro = useCallback(async (): Promise<boolean> => {
-    setError('In-app purchases are not yet available. Please check back soon.');
-    return false;
-  }, []);
+    setError(null);
+    setLoading(true);
+    try {
+      const customerInfo = await purchaseProduct(Config.revenueCatProMonthly);
+      if (!customerInfo) return false;
+      if (!checkEntitlement(customerInfo, Config.entitlementPro)) {
+        setError('Purchase completed but entitlement is not active yet. Try restoring purchases.');
+        return false;
+      }
+      await updateTierFromEntitlements(customerInfo);
+      return true;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Purchase failed. Please try again.';
+      setError(msg);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [updateTierFromEntitlements]);
 
   const purchaseBusiness = useCallback(async (): Promise<boolean> => {
-    setError('In-app purchases are not yet available. Please check back soon.');
-    return false;
-  }, []);
+    setError(null);
+    setLoading(true);
+    try {
+      const customerInfo = await purchaseProduct(Config.revenueCatBusinessMonthly);
+      if (!customerInfo) return false;
+      if (!checkEntitlement(customerInfo, Config.entitlementBusiness)) {
+        setError('Purchase completed but entitlement is not active yet. Try restoring purchases.');
+        return false;
+      }
+      await updateTierFromEntitlements(customerInfo);
+      return true;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Purchase failed. Please try again.';
+      setError(msg);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [updateTierFromEntitlements]);
 
   const restorePurchases = useCallback(async (): Promise<boolean> => {
-    // TODO: Purchases.restorePurchases()
-    await fetchTier();
-    return true;
-  }, [fetchTier]);
+    setError(null);
+    setLoading(true);
+    try {
+      const customerInfo = await rcRestorePurchases();
+      if (customerInfo) {
+        await updateTierFromEntitlements(customerInfo);
+      } else {
+        await fetchTier();
+      }
+      return true;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Restore failed. Please try again.';
+      setError(msg);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [updateTierFromEntitlements, fetchTier]);
 
   return {
     tier,

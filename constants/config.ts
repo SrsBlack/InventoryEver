@@ -11,6 +11,7 @@ export const Config = {
   // Deploy: supabase secrets set OPENAI_API_KEY=... GOOGLE_VISION_API_KEY=... VERYFI_CLIENT_ID=... VERYFI_API_KEY=... VERYFI_USERNAME=... --project-ref senmpagpravittvayecz
 
   // RevenueCat
+  revenueCatApiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? '',
   revenueCatIosKey: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? '',
   revenueCatAndroidKey: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? '',
 
@@ -34,10 +35,13 @@ export const Config = {
   storageBucket: 'item-images',
 
   // Subscription product IDs
-  revenueCatProMonthly: 'pro_monthly',
-  revenueCatProYearly: 'pro_yearly',
-  revenueCatBusinessMonthly: 'business_monthly',
-  revenueCatBusinessYearly: 'business_yearly',
+  revenueCatProMonthly: 'inventoryever_pro_monthly',
+  revenueCatProAnnual: 'inventoryever_pro_annual',
+  revenueCatBusinessMonthly: 'inventoryever_business_monthly',
+  revenueCatBusinessAnnual: 'inventoryever_business_annual',
+  // Legacy aliases (kept for backward compatibility)
+  revenueCatProYearly: 'inventoryever_pro_annual',
+  revenueCatBusinessYearly: 'inventoryever_business_annual',
 
   // Entitlements
   entitlementPro: 'pro',

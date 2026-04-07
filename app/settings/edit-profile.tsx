@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  ActivityIndicator,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,11 +17,12 @@ import { supabase } from '../../lib/supabase';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Config } from '../../constants/config';
+import { SkeletonBlock } from '../../components/ui/Skeleton';
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { user, profile, refreshProfile } = useAuthContext();
+  const { user, profile, loading: profileLoading, refreshProfile } = useAuthContext();
 
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
   const [avatarUri, setAvatarUri] = useState<string | null>(profile?.avatar_url ?? null);
@@ -104,6 +104,30 @@ export default function EditProfileScreen() {
       .charAt(0)
       .toUpperCase();
 
+  if (profileLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Edit Profile' }} />
+        <View style={[styles.container, styles.skeletonContent, { backgroundColor: colors.background }]}>
+          {/* Avatar placeholder */}
+          <View style={styles.avatarSection}>
+            <SkeletonBlock width={88} height={88} borderRadius={16} />
+            <View style={{ height: 8 }} />
+            <SkeletonBlock width={100} height={12} borderRadius={4} />
+          </View>
+          {/* Field placeholders */}
+          <View style={styles.fields}>
+            <SkeletonBlock width="35%" height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+            <SkeletonBlock width="100%" height={48} borderRadius={8} style={{ marginBottom: 16 }} />
+            <SkeletonBlock width="25%" height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+            <SkeletonBlock width="100%" height={48} borderRadius={8} style={{ marginBottom: 16 }} />
+          </View>
+          <SkeletonBlock width="100%" height={48} borderRadius={8} />
+        </View>
+      </>
+    );
+  }
+
   return (
     <>
       <Stack.Screen options={{ title: 'Edit Profile' }} />
@@ -168,6 +192,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 20 },
+  skeletonContent: { padding: 20 },
   avatarSection: { alignItems: 'center', marginBottom: 28 },
   avatarWrapper: { position: 'relative', marginBottom: 8 },
   avatarImage: { width: 88, height: 88, borderRadius: 16 },

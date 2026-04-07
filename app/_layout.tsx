@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+import { initializePurchases } from '../lib/purchases';
 
 function RootLayoutInner() {
   const { isDark } = useTheme();
+
+  useEffect(() => {
+    initializePurchases();
+  }, []);
+
   return (
     <AuthProvider>
       <StatusBar style={isDark ? 'light' : 'dark'} />
