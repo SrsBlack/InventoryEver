@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 interface SpinnerProps {
   size?: 'small' | 'large';
@@ -9,11 +9,14 @@ interface SpinnerProps {
   fullScreen?: boolean;
 }
 
-export function Spinner({ size = 'large', color = Colors.primary, label, fullScreen }: SpinnerProps) {
+export function Spinner({ size = 'large', color, label, fullScreen }: SpinnerProps) {
+  const colors = useColors();
+  const spinnerColor = color ?? colors.primary;
+
   return (
-    <View style={[styles.container, fullScreen && styles.fullScreen]}>
-      <ActivityIndicator size={size} color={color} />
-      {label && <Text style={styles.label}>{label}</Text>}
+    <View style={[styles.container, fullScreen && { flex: 1, backgroundColor: colors.background }]}>
+      <ActivityIndicator size={size} color={spinnerColor} />
+      {label && <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>}
     </View>
   );
 }
@@ -24,14 +27,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
-  fullScreen: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
   label: {
     marginTop: 12,
     fontSize: 14,
-    color: Colors.textSecondary,
     fontWeight: '500',
   },
 });

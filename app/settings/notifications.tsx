@@ -5,12 +5,15 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
+  Alert,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../components/ui/Card';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
+import { requestPushPermission, registerDeviceToken, unregisterDeviceToken } from '../../lib/notifications';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 const STORAGE_KEY = 'notification_prefs';
 
@@ -33,6 +36,8 @@ const DEFAULT_PREFS: NotificationPrefs = {
 };
 
 export default function NotificationsScreen() {
+  const { user } = useAuthContext();
+  const colors = useColors();
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
 
   useEffect(() => {
@@ -47,21 +52,43 @@ export default function NotificationsScreen() {
     });
   }, []);
 
-  const toggle = (key: keyof NotificationPrefs) => {
+  const toggle = async (key: keyof NotificationPrefs) => {
     const updated = { ...prefs, [key]: !prefs[key] };
     setPrefs(updated);
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+    // When toggling push notifications, request permission and register/deregister token
+    if (key === 'pushNotifications' && user?.id) {
+      if (updated.pushNotifications) {
+        const granted = await requestPushPermission();
+        if (!granted) {
+          Alert.alert(
+            'Permission Required',
+            'Please enable notifications in your device settings to receive push alerts.',
+            [{ text: 'OK' }]
+          );
+          // Revert toggle
+          const reverted = { ...updated, pushNotifications: false };
+          setPrefs(reverted);
+          AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(reverted));
+          return;
+        }
+        await registerDeviceToken(user.id);
+      } else {
+        await unregisterDeviceToken(user.id);
+      }
+    }
   };
 
   return (
     <>
       <Stack.Screen options={{ title: 'Notifications' }} />
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
         <View style={styles.body}>
           {/* Alerts */}
           <View style={styles.sectionHeader}>
-            <Ionicons name="alert-circle-outline" size={18} color={Colors.primary} style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>Alerts</Text>
+            <Ionicons name="alert-circle-outline" size={18} color={colors.primary} style={styles.sectionIcon} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Alerts</Text>
           </View>
           <Card variant="bordered" padding={0} style={styles.card}>
             <ToggleRow
@@ -86,8 +113,8 @@ export default function NotificationsScreen() {
 
           {/* General */}
           <View style={styles.sectionHeader}>
-            <Ionicons name="settings-outline" size={18} color={Colors.primary} style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>General</Text>
+            <Ionicons name="settings-outline" size={18} color={colors.primary} style={styles.sectionIcon} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>General</Text>
           </View>
           <Card variant="bordered" padding={0} style={styles.card}>
             <ToggleRow
@@ -96,12 +123,7 @@ export default function NotificationsScreen() {
               onToggle={() => toggle('pushNotifications')}
               isLast={false}
             />
-            <ToggleRow
-              label="Email notifications"
-              value={prefs.emailNotifications}
-              onToggle={() => toggle('emailNotifications')}
-              isLast={false}
-            />
+            <ComingSoonRow label="Email notifications" isLast={false} />
             <ToggleRow
               label="Sound"
               value={prefs.sound}
@@ -126,21 +148,40 @@ function ToggleRow({
   onToggle: () => void;
   isLast: boolean;
 }) {
+  const colors = useColors();
   return (
-    <View style={[styles.row, !isLast && styles.rowBorder]}>
-      <Text style={styles.rowLabel}>{label}</Text>
+    <View style={[styles.row, { backgroundColor: colors.surface }, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
+      <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{label}</Text>
       <Switch
         value={value}
         onValueChange={onToggle}
-        trackColor={{ false: Colors.gray200, true: Colors.primary + '66' }}
-        thumbColor={value ? Colors.primary : Colors.gray400}
+        trackColor={{ false: colors.gray200, true: colors.primary + '66' }}
+        thumbColor={value ? colors.primary : colors.gray400}
+      />
+    </View>
+  );
+}
+
+function ComingSoonRow({ label, isLast }: { label: string; isLast: boolean }) {
+  const colors = useColors();
+  return (
+    <View style={[styles.row, { backgroundColor: colors.surface }, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>{label}</Text>
+        <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Coming soon</Text>
+      </View>
+      <Switch
+        value={false}
+        disabled
+        trackColor={{ false: colors.gray200, true: colors.gray200 }}
+        thumbColor={colors.gray400}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   body: { padding: 16 },
   sectionHeader: {
     flexDirection: 'row',
@@ -152,7 +193,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.textPrimary,
   },
   card: { marginBottom: 8 },
   row: {
@@ -160,13 +200,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: Colors.surface,
   },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.divider },
   rowLabel: {
     flex: 1,
     fontSize: 15,
-    color: Colors.textPrimary,
     fontWeight: '500',
   },
 });

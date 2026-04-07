@@ -308,7 +308,12 @@ CREATE POLICY "alerts_update" ON alerts
 DROP POLICY IF EXISTS "alerts_insert" ON alerts;
 CREATE POLICY "alerts_insert" ON alerts
   FOR INSERT WITH CHECK (
-    auth.uid() IS NOT NULL
+    auth.uid() IS NOT NULL AND
+    EXISTS (
+      SELECT 1 FROM workspace_members wm
+      WHERE wm.workspace_id = alerts.workspace_id
+      AND wm.user_id = auth.uid()
+    )
   );
 
 -- ============================================================

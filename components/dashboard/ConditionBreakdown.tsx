@@ -1,21 +1,23 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 interface ConditionBreakdownProps {
   items: Array<{ condition?: string }>;
 }
 
-const CONDITIONS = [
-  { key: 'new', label: 'New', color: Colors.success },
-  { key: 'excellent', label: 'Excellent', color: '#34D399' },
-  { key: 'good', label: 'Good', color: Colors.warning },
-  { key: 'fair', label: 'Fair', color: '#FBBF24' },
-  { key: 'poor', label: 'Poor', color: Colors.error },
-  { key: 'damaged', label: 'Damaged', color: '#DC2626' },
-];
-
 export function ConditionBreakdown({ items }: ConditionBreakdownProps) {
+  const colors = useColors();
+
+  const CONDITIONS = [
+    { key: 'new', label: 'New', color: colors.success },
+    { key: 'excellent', label: 'Excellent', color: '#34D399' },
+    { key: 'good', label: 'Good', color: colors.warning },
+    { key: 'fair', label: 'Fair', color: '#FBBF24' },
+    { key: 'poor', label: 'Poor', color: colors.error },
+    { key: 'damaged', label: 'Damaged', color: '#DC2626' },
+  ];
+
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
     for (const item of items) {
@@ -34,7 +36,7 @@ export function ConditionBreakdown({ items }: ConditionBreakdownProps) {
   if (total === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>No condition data yet</Text>
+        <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No condition data yet</Text>
       </View>
     );
   }
@@ -42,7 +44,7 @@ export function ConditionBreakdown({ items }: ConditionBreakdownProps) {
   return (
     <View style={styles.container}>
       {/* Stacked bar */}
-      <View style={styles.stackedBar}>
+      <View style={[styles.stackedBar, { backgroundColor: colors.gray100 }]}>
         {conditionsWithData.map((cond, index) => {
           const count = counts[cond.key] ?? 0;
           const pct = (count / total) * 100;
@@ -70,8 +72,8 @@ export function ConditionBreakdown({ items }: ConditionBreakdownProps) {
         {conditionsWithData.map(cond => (
           <View key={cond.key} style={styles.legendItem}>
             <View style={[styles.dot, { backgroundColor: cond.color }]} />
-            <Text style={styles.legendLabel}>{cond.label}</Text>
-            <Text style={styles.legendCount}>{counts[cond.key]}</Text>
+            <Text style={[styles.legendLabel, { color: colors.textSecondary }]}>{cond.label}</Text>
+            <Text style={[styles.legendCount, { color: colors.textPrimary }]}>{counts[cond.key]}</Text>
           </View>
         ))}
       </View>
@@ -88,7 +90,6 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     overflow: 'hidden',
-    backgroundColor: Colors.gray100,
   },
   segment: {
     height: '100%',
@@ -111,13 +112,11 @@ const styles = StyleSheet.create({
   },
   legendLabel: {
     fontSize: 12,
-    color: Colors.textSecondary,
     flex: 1,
   },
   legendCount: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textPrimary,
   },
   empty: {
     paddingVertical: 16,
@@ -125,6 +124,5 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    color: Colors.textTertiary,
   },
 });

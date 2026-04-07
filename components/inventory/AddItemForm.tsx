@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { uploadItemImage } from '../../lib/storage';
@@ -23,7 +23,8 @@ import { VoiceRecorder } from './VoiceRecorder';
 import { BarcodeScanner } from './BarcodeScanner';
 import { TagManager } from './TagManager';
 import { lookupBarcode } from '../../lib/barcode';
-import type { AddItemFormData, Category, ItemCondition } from '../../types';
+import type { AddItemFormData, Category, ItemCondition, Location } from '../../types';
+import { LocationPicker } from '../ui/LocationPicker';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -82,6 +83,7 @@ const defaultFormData: AddItemFormData = {
   purchase_date: new Date().toISOString().split('T')[0],
   location: '',
   location_details: '',
+  location_id: '',
   category_id: '',
   brand: '',
   model: '',
@@ -95,6 +97,7 @@ const defaultFormData: AddItemFormData = {
 };
 
 export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCancel }: AddItemFormProps) {
+  const colors = useColors();
   const [formData, setFormData] = useState<AddItemFormData>(defaultFormData);
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -325,97 +328,97 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
 
   if (step === 'capture') {
     return (
-      <View style={styles.captureScreen}>
-        <Text style={styles.captureTitle}>Add Item</Text>
-        <Text style={styles.captureSubtitle}>How would you like to add this item?</Text>
+      <View style={[styles.captureScreen, { backgroundColor: colors.background }]}>
+        <Text style={[styles.captureTitle, { color: colors.textPrimary }]}>Add Item</Text>
+        <Text style={[styles.captureSubtitle, { color: colors.textSecondary }]}>How would you like to add this item?</Text>
 
         <TouchableOpacity
-          style={[styles.captureOption, { backgroundColor: Colors.primary + '15' }]}
+          style={[styles.captureOption, { backgroundColor: colors.primary + '15' }]}
           onPress={() => pickAndAnalyzeImage(true)}
           disabled={aiLoading}
         >
           <View style={styles.captureOptionIcon}>
-            <Ionicons name="camera" size={28} color={Colors.primary} />
+            <Ionicons name="camera" size={28} color={colors.primary} />
           </View>
           <View style={styles.captureOptionText}>
-            <Text style={styles.captureOptionTitle}>Take a Photo</Text>
-            <Text style={styles.captureOptionDesc}>AI will auto-fill item details</Text>
+            <Text style={[styles.captureOptionTitle, { color: colors.textPrimary }]}>Take a Photo</Text>
+            <Text style={[styles.captureOptionDesc, { color: colors.textSecondary }]}>AI will auto-fill item details</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.textTertiary} />
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.captureOption, { backgroundColor: Colors.accent + '15' }]}
+          style={[styles.captureOption, { backgroundColor: colors.accent + '15' }]}
           onPress={() => pickAndAnalyzeImage(false)}
           disabled={aiLoading}
         >
           <View style={styles.captureOptionIcon}>
-            <Ionicons name="images" size={28} color={Colors.accent} />
+            <Ionicons name="images" size={28} color={colors.accent} />
           </View>
           <View style={styles.captureOptionText}>
-            <Text style={styles.captureOptionTitle}>Choose from Gallery</Text>
-            <Text style={styles.captureOptionDesc}>Select an existing photo</Text>
+            <Text style={[styles.captureOptionTitle, { color: colors.textPrimary }]}>Choose from Gallery</Text>
+            <Text style={[styles.captureOptionDesc, { color: colors.textSecondary }]}>Select an existing photo</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.textTertiary} />
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.captureOption, { backgroundColor: Colors.success + '15' }]}
+          style={[styles.captureOption, { backgroundColor: colors.success + '15' }]}
           onPress={scanReceipt}
           disabled={aiLoading}
         >
           <View style={styles.captureOptionIcon}>
-            <Ionicons name="receipt" size={28} color={Colors.success} />
+            <Ionicons name="receipt" size={28} color={colors.success} />
           </View>
           <View style={styles.captureOptionText}>
-            <Text style={styles.captureOptionTitle}>Scan Receipt</Text>
-            <Text style={styles.captureOptionDesc}>Extract purchase data automatically</Text>
+            <Text style={[styles.captureOptionTitle, { color: colors.textPrimary }]}>Scan Receipt</Text>
+            <Text style={[styles.captureOptionDesc, { color: colors.textSecondary }]}>Extract purchase data automatically</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.textTertiary} />
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.captureOption, { backgroundColor: Colors.secondary + '15' }]}
+          style={[styles.captureOption, { backgroundColor: colors.secondary + '15' }]}
           onPress={() => setShowVoiceRecorder(true)}
           disabled={aiLoading}
         >
           <View style={styles.captureOptionIcon}>
-            <Ionicons name="mic" size={28} color={Colors.secondary} />
+            <Ionicons name="mic" size={28} color={colors.secondary} />
           </View>
           <View style={styles.captureOptionText}>
-            <Text style={styles.captureOptionTitle}>Voice Input</Text>
-            <Text style={styles.captureOptionDesc}>Describe your item and AI fills the rest</Text>
+            <Text style={[styles.captureOptionTitle, { color: colors.textPrimary }]}>Voice Input</Text>
+            <Text style={[styles.captureOptionDesc, { color: colors.textSecondary }]}>Describe your item and AI fills the rest</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.textTertiary} />
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.captureOption, { backgroundColor: Colors.info + '15' }]}
+          style={[styles.captureOption, { backgroundColor: colors.info + '15' }]}
           onPress={() => setShowBarcodeScanner(true)}
           disabled={aiLoading}
         >
           <View style={styles.captureOptionIcon}>
-            <Ionicons name="barcode" size={28} color={Colors.info} />
+            <Ionicons name="barcode" size={28} color={colors.info} />
           </View>
           <View style={styles.captureOptionText}>
-            <Text style={styles.captureOptionTitle}>Scan Barcode</Text>
-            <Text style={styles.captureOptionDesc}>Look up product by barcode or QR code</Text>
+            <Text style={[styles.captureOptionTitle, { color: colors.textPrimary }]}>Scan Barcode</Text>
+            <Text style={[styles.captureOptionDesc, { color: colors.textSecondary }]}>Look up product by barcode or QR code</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.textTertiary} />
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.captureOption, { backgroundColor: Colors.gray100 }]}
+          style={[styles.captureOption, { backgroundColor: colors.gray100 }]}
           onPress={() => setStep('form')}
         >
           <View style={styles.captureOptionIcon}>
-            <Ionicons name="create" size={28} color={Colors.textSecondary} />
+            <Ionicons name="create" size={28} color={colors.textSecondary} />
           </View>
           <View style={styles.captureOptionText}>
-            <Text style={styles.captureOptionTitle}>Manual Entry</Text>
-            <Text style={styles.captureOptionDesc}>Type in all the details yourself</Text>
+            <Text style={[styles.captureOptionTitle, { color: colors.textPrimary }]}>Manual Entry</Text>
+            <Text style={[styles.captureOptionDesc, { color: colors.textSecondary }]}>Type in all the details yourself</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.textTertiary} />
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
         </TouchableOpacity>
 
         {onCancel && (
@@ -428,7 +431,7 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
   return (
     <ScrollView
       ref={scrollRef}
-      style={styles.formScroll}
+      style={[styles.formScroll, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.formContent}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
@@ -436,16 +439,16 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
       {/* Image Preview */}
       {previewImage && (
         <View style={styles.imagePreviewWrapper}>
-          <Image source={{ uri: previewImage }} style={styles.imagePreview} />
+          <Image source={{ uri: previewImage }} style={[styles.imagePreview, { backgroundColor: colors.gray100 }]} />
           {aiLoading && (
             <View style={styles.aiOverlay}>
-              <ActivityIndicator color={Colors.white} size="large" />
-              <Text style={styles.aiText}>AI analyzing...</Text>
+              <ActivityIndicator color={colors.white} size="large" />
+              <Text style={[styles.aiText, { color: colors.white }]}>AI analyzing...</Text>
             </View>
           )}
           {aiConfidence !== null && !aiLoading && (
             <View style={styles.confidenceBadge}>
-              <Text style={styles.confidenceText}>
+              <Text style={[styles.confidenceText, { color: colors.white }]}>
                 AI Confidence: {Math.round(aiConfidence * 100)}%
               </Text>
             </View>
@@ -456,33 +459,33 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
       {/* Photo buttons */}
       <View style={styles.photoRow}>
         <TouchableOpacity
-          style={styles.photoBtn}
+          style={[styles.photoBtn, { backgroundColor: colors.gray50, borderColor: colors.border }]}
           onPress={() => pickAndAnalyzeImage(true)}
           disabled={aiLoading}
         >
-          <Ionicons name="camera" size={22} color={Colors.textSecondary} />
-          <Text style={styles.photoBtnText}>Camera</Text>
+          <Ionicons name="camera" size={22} color={colors.textSecondary} />
+          <Text style={[styles.photoBtnText, { color: colors.textSecondary }]}>Camera</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.photoBtn}
+          style={[styles.photoBtn, { backgroundColor: colors.gray50, borderColor: colors.border }]}
           onPress={() => pickAndAnalyzeImage(false)}
           disabled={aiLoading}
         >
-          <Ionicons name="images" size={22} color={Colors.textSecondary} />
-          <Text style={styles.photoBtnText}>Gallery</Text>
+          <Ionicons name="images" size={22} color={colors.textSecondary} />
+          <Text style={[styles.photoBtnText, { color: colors.textSecondary }]}>Gallery</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.photoBtn}
+          style={[styles.photoBtn, { backgroundColor: colors.gray50, borderColor: colors.border }]}
           onPress={scanReceipt}
           disabled={aiLoading}
         >
-          <Ionicons name="receipt" size={22} color={Colors.textSecondary} />
-          <Text style={styles.photoBtnText}>Receipt</Text>
+          <Ionicons name="receipt" size={22} color={colors.textSecondary} />
+          <Text style={[styles.photoBtnText, { color: colors.textSecondary }]}>Receipt</Text>
         </TouchableOpacity>
       </View>
 
       {/* Core fields */}
-      <Text style={styles.sectionLabel}>Item Details</Text>
+      <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Item Details</Text>
 
       <Input
         label="Name"
@@ -535,26 +538,27 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
       </View>
 
       {/* Category */}
-      <Text style={styles.fieldLabel}>Category</Text>
+      <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>Category</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
         {categories.map(cat => (
           <TouchableOpacity
             key={cat.id}
             style={[
               styles.categoryChip,
-              formData.category_id === cat.id && styles.categoryChipActive,
-              formData.category_id === cat.id && { borderColor: cat.color_hex },
+              { backgroundColor: colors.gray100 },
+              formData.category_id === cat.id && { backgroundColor: colors.primary + '15', borderColor: cat.color_hex },
             ]}
             onPress={() => update('category_id', cat.id)}
           >
             <Ionicons
               name={getCategoryIcon(cat.name)}
               size={16}
-              color={formData.category_id === cat.id ? cat.color_hex : Colors.textSecondary}
+              color={formData.category_id === cat.id ? cat.color_hex : colors.textSecondary}
             />
             <Text
               style={[
                 styles.categoryChipText,
+                { color: colors.textSecondary },
                 formData.category_id === cat.id && { color: cat.color_hex },
               ]}
             >
@@ -565,27 +569,29 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
       </ScrollView>
 
       {/* Condition */}
-      <Text style={styles.fieldLabel}>Condition</Text>
+      <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>Condition</Text>
       <View style={styles.conditionRow}>
         {CONDITIONS.map(c => (
           <TouchableOpacity
             key={c.value}
             style={[
               styles.conditionChip,
-              formData.condition === c.value && styles.conditionChipActive,
+              { backgroundColor: colors.gray100 },
+              formData.condition === c.value && { backgroundColor: colors.primary + '15', borderColor: colors.primary },
             ]}
             onPress={() => update('condition', c.value)}
           >
             <Ionicons
               name={c.icon}
               size={20}
-              color={formData.condition === c.value ? Colors.primary : Colors.textSecondary}
+              color={formData.condition === c.value ? colors.primary : colors.textSecondary}
               style={styles.conditionIcon}
             />
             <Text
               style={[
                 styles.conditionLabel,
-                formData.condition === c.value && styles.conditionLabelActive,
+                { color: colors.textSecondary },
+                formData.condition === c.value && { color: colors.primary, fontWeight: '700' },
               ]}
             >
               {c.label}
@@ -595,7 +601,7 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
       </View>
 
       {/* Purchase Info */}
-      <Text style={styles.sectionLabel}>Purchase Details</Text>
+      <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Purchase Details</Text>
 
       <View style={styles.row}>
         <Input
@@ -617,25 +623,28 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
       </View>
 
       {/* Location */}
-      <Text style={styles.sectionLabel}>Location</Text>
+      <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Location</Text>
 
-      <Input
-        label="Room / Area"
-        placeholder="e.g. Living Room, Garage"
-        value={formData.location}
-        onChangeText={v => update('location', v)}
-        icon="location"
-      />
-
-      <Input
-        label="Specific Location"
-        placeholder="e.g. Top shelf, Left drawer"
-        value={formData.location_details}
-        onChangeText={v => update('location_details', v)}
+      <LocationPicker
+        workspaceId={workspaceId}
+        value={formData.location_id || null}
+        onChange={(locationId, location) => {
+          update('location_id', locationId ?? '');
+          if (location) {
+            update('location', location.name);
+            update('location_details', location.full_path ?? '');
+          } else if (!locationId) {
+            update('location', '');
+            update('location_details', '');
+          }
+        }}
+        label="Location"
+        placeholder="Select or create a location..."
+        allowCreate
       />
 
       {/* Tags */}
-      <Text style={styles.sectionLabel}>Tags (optional)</Text>
+      <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Tags (optional)</Text>
       <TagManager
         mode="selector"
         workspaceId={workspaceId}
@@ -644,7 +653,7 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
       />
 
       {/* Warranty */}
-      <Text style={styles.sectionLabel}>Warranty & Serial</Text>
+      <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Warranty & Serial</Text>
 
       <View style={styles.row}>
         <Input
@@ -699,17 +708,14 @@ const styles = StyleSheet.create({
   captureScreen: {
     flex: 1,
     padding: 24,
-    backgroundColor: Colors.background,
   },
   captureTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: Colors.textPrimary,
     marginBottom: 6,
   },
   captureSubtitle: {
     fontSize: 15,
-    color: Colors.textSecondary,
     marginBottom: 28,
   },
   captureOption: {
@@ -730,12 +736,10 @@ const styles = StyleSheet.create({
   captureOptionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: 2,
   },
   captureOptionDesc: {
     fontSize: 13,
-    color: Colors.textSecondary,
   },
   cancelBtn: {
     marginTop: 12,
@@ -744,7 +748,6 @@ const styles = StyleSheet.create({
   // Form
   formScroll: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   formContent: {
     padding: 20,
@@ -759,7 +762,6 @@ const styles = StyleSheet.create({
   imagePreview: {
     width: '100%',
     height: 200,
-    backgroundColor: Colors.gray100,
   },
   aiOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -768,7 +770,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   aiText: {
-    color: Colors.white,
     marginTop: 8,
     fontWeight: '600',
   },
@@ -782,7 +783,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   confidenceText: {
-    color: Colors.white,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -794,29 +794,24 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: 12,
-    backgroundColor: Colors.gray50,
     borderRadius: 12,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   photoBtnText: {
     fontSize: 11,
-    color: Colors.textSecondary,
     marginTop: 4,
     fontWeight: '500',
   },
   sectionLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.textPrimary,
     marginBottom: 12,
     marginTop: 8,
   },
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: 8,
   },
   row: {
@@ -830,18 +825,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: Colors.gray100,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  categoryChipActive: {
-    backgroundColor: Colors.primary + '15',
-  },
   categoryChipText: {
     fontSize: 13,
-    color: Colors.textSecondary,
     fontWeight: '500',
     marginLeft: 4,
   },
@@ -856,26 +846,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 8,
     marginBottom: 8,
-    backgroundColor: Colors.gray100,
     minWidth: 64,
     borderWidth: 1.5,
     borderColor: 'transparent',
-  },
-  conditionChipActive: {
-    backgroundColor: Colors.primary + '15',
-    borderColor: Colors.primary,
   },
   conditionIcon: {
     marginBottom: 4,
   },
   conditionLabel: {
     fontSize: 11,
-    color: Colors.textSecondary,
     fontWeight: '500',
-  },
-  conditionLabelActive: {
-    color: Colors.primary,
-    fontWeight: '700',
   },
   actions: {
     marginTop: 24,

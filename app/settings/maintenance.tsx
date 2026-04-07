@@ -15,7 +15,7 @@ import { useColors } from '../../hooks/useColors';
 import { useMaintenance } from '../../hooks/useMaintenance';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { Spinner } from '../../components/ui/Spinner';
+import { SkeletonFullScreen } from '../../components/ui/Skeleton';
 import { formatPrice, formatDate } from '../../lib/utils';
 
 type Tab = 'upcoming' | 'history';
@@ -92,7 +92,7 @@ export default function MaintenanceScreen() {
         </View>
 
         {loading ? (
-          <Spinner fullScreen label="Loading maintenance..." />
+          <SkeletonFullScreen />
         ) : (
           <ScrollView
             style={styles.scroll}

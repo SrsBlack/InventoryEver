@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -36,6 +36,7 @@ export function ImageGallery({
   onAddImage,
   placeholderIcon = 'cube',
 }: ImageGalleryProps) {
+  const colors = useColors();
   const [activeIndex, setActiveIndex] = useState(0);
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -75,9 +76,14 @@ export function ImageGallery({
           onPress={onAddImage}
           activeOpacity={0.8}
         >
-          <View style={[styles.addCard, { height }]}>
-            <Ionicons name="add" size={40} color={Colors.primary} />
-            <Text style={styles.addLabel}>Add Photo</Text>
+          <View
+            style={[
+              styles.addCard,
+              { height, borderColor: colors.primary, backgroundColor: colors.gray50 },
+            ]}
+          >
+            <Ionicons name="add" size={40} color={colors.primary} />
+            <Text style={[styles.addLabel, { color: colors.primary }]}>Add Photo</Text>
           </View>
         </TouchableOpacity>
       );
@@ -111,8 +117,8 @@ export function ImageGallery({
   // Empty state
   if (images.length === 0 && !onAddImage) {
     return (
-      <LinearGradient colors={Colors.gradientDark} style={[styles.placeholder, { height }]}>
-        <Ionicons name={placeholderIcon as any} size={80} color={Colors.white} />
+      <LinearGradient colors={colors.gradientDark} style={[styles.placeholder, { height }]}>
+        <Ionicons name={placeholderIcon as any} size={80} color={colors.white} />
       </LinearGradient>
     );
   }
@@ -120,12 +126,15 @@ export function ImageGallery({
   if (images.length === 0 && onAddImage) {
     return (
       <TouchableOpacity
-        style={[styles.addCard, { height, width: SCREEN_WIDTH }]}
+        style={[
+          styles.addCard,
+          { height, width: SCREEN_WIDTH, borderColor: colors.primary, backgroundColor: colors.gray50 },
+        ]}
         onPress={onAddImage}
         activeOpacity={0.8}
       >
-        <Ionicons name="add" size={40} color={Colors.primary} />
-        <Text style={styles.addLabel}>Add Photo</Text>
+        <Ionicons name="add" size={40} color={colors.primary} />
+        <Text style={[styles.addLabel, { color: colors.primary }]}>Add Photo</Text>
       </TouchableOpacity>
     );
   }
@@ -158,7 +167,9 @@ export function ImageGallery({
               key={i}
               style={[
                 styles.dot,
-                i === activeIndex ? styles.dotActive : styles.dotInactive,
+                i === activeIndex
+                  ? [styles.dotActive, { backgroundColor: colors.primary }]
+                  : [styles.dotInactive, { backgroundColor: colors.gray300 }],
               ]}
             />
           ))}
@@ -193,7 +204,7 @@ export function ImageGallery({
 
           {/* Counter */}
           <View style={styles.viewerCounter}>
-            <Text style={styles.viewerCounterText}>
+            <Text style={[styles.viewerCounterText, { color: colors.white }]}>
               {viewerIndex + 1} / {images.length}
             </Text>
           </View>
@@ -203,7 +214,7 @@ export function ImageGallery({
             style={styles.viewerClose}
             onPress={() => setViewerVisible(false)}
           >
-            <Ionicons name="close" size={28} color={Colors.white} />
+            <Ionicons name="close" size={28} color={colors.white} />
           </TouchableOpacity>
         </View>
       </Modal>
@@ -222,17 +233,14 @@ const styles = StyleSheet.create({
   addCard: {
     width: SCREEN_WIDTH,
     borderWidth: 2,
-    borderColor: Colors.primary,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.gray50,
   },
   addLabel: {
     marginTop: 8,
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.primary,
   },
   dotsRow: {
     position: 'absolute',
@@ -250,12 +258,10 @@ const styles = StyleSheet.create({
   dotActive: {
     width: 10,
     height: 10,
-    backgroundColor: Colors.primary,
   },
   dotInactive: {
     width: 8,
     height: 8,
-    backgroundColor: Colors.gray300,
   },
   // Viewer
   viewerContainer: {
@@ -281,7 +287,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   viewerCounterText: {
-    color: Colors.white,
     fontSize: 16,
     fontWeight: '600',
     backgroundColor: 'rgba(0,0,0,0.5)',

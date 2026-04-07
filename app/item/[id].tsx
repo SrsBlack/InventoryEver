@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,10 +17,10 @@ import { ImageGallery } from '../../components/inventory/ImageGallery';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { Spinner } from '../../components/ui/Spinner';
+import { SkeletonDetail } from '../../components/ui/Skeleton';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 import {
   formatPrice,
   formatDate,
@@ -35,11 +36,13 @@ export default function ItemDetailScreen() {
   const router = useRouter();
   const { activeWorkspace } = useWorkspaceContext();
   const { updateItem, deleteItem } = useItems(activeWorkspace?.id);
+  const colors = useColors();
 
   const [item, setItem] = useState<Item | null>(null);
   const [galleryImages, setGalleryImages] = useState<Array<{ id: string; image_url: string; is_primary?: boolean }>>([]);
   const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [duplicating, setDuplicating] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [editData, setEditData] = useState<Partial<Item>>({});
@@ -181,28 +184,71 @@ export default function ItemDetailScreen() {
     }
   };
 
-  if (loading || !item) return <Spinner fullScreen label="Loading item..." />;
+  const handleDuplicate = async () => {
+    if (!item) return;
+    setDuplicating(true);
+    try {
+      const { id: _id, created_at: _ca, updated_at: _ua, barcode: _bc, ...rest } = item;
+      const { data, error } = await supabase
+        .from('items')
+        .insert([{ ...rest, name: `${item.name} (Copy)` }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      const newItem = data as Item;
+
+      // Copy item_tags
+      const { data: tagRows } = await supabase
+        .from('item_tags')
+        .select('tag_id')
+        .eq('item_id', item.id);
+
+      if (tagRows && tagRows.length > 0) {
+        await supabase
+          .from('item_tags')
+          .insert(tagRows.map((r: { tag_id: string }) => ({ item_id: newItem.id, tag_id: r.tag_id })));
+      }
+
+      router.replace(`/item/${newItem.id}`);
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Duplication failed.');
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
+  if (loading || !item) return <SkeletonDetail />;
 
   const warranty = warrantyStatus(item.warranty_expiry_date);
   const condColor = conditionColor(item.condition);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       {/* Header Gallery */}
       <View style={styles.imageContainer}>
         <ImageGallery images={galleryImages} height={280} placeholderIcon="cube" />
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={Colors.white} />
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
         </TouchableOpacity>
         <View style={styles.imageActions}>
           <TouchableOpacity style={styles.actionBtn} onPress={() => router.push(`/item/edit/${id}`)}>
-            <Ionicons name="pencil" size={20} color={Colors.white} />
+            <Ionicons name="pencil" size={20} color={colors.white} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
-            <Ionicons name="share-outline" size={20} color={Colors.white} />
+            <Ionicons name="share-outline" size={20} color={colors.white} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => id && router.push(`/labels/print?ids=${encodeURIComponent(id)}`)}>
+            <Ionicons name="print-outline" size={20} color={colors.white} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={handleDuplicate} disabled={duplicating}>
+            {duplicating
+              ? <ActivityIndicator size="small" color={colors.white} />
+              : <Ionicons name="copy-outline" size={20} color={colors.white} />
+            }
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={handleDelete}>
-            <Ionicons name="trash" size={20} color={Colors.white} />
+            <Ionicons name="trash" size={20} color={colors.white} />
           </TouchableOpacity>
         </View>
       </View>
@@ -211,9 +257,9 @@ export default function ItemDetailScreen() {
         {/* Title */}
         <View style={styles.titleRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={[styles.itemName, { color: colors.textPrimary }]}>{item.name}</Text>
             {item.brand && (
-              <Text style={styles.itemBrand}>{item.brand}{item.model ? ` · ${item.model}` : ''}</Text>
+              <Text style={[styles.itemBrand, { color: colors.textSecondary }]}>{item.brand}{item.model ? ` · ${item.model}` : ''}</Text>
             )}
           </View>
           <Badge
@@ -224,7 +270,7 @@ export default function ItemDetailScreen() {
         </View>
 
         {item.description && (
-          <Text style={styles.description}>{item.description}</Text>
+          <Text style={[styles.description, { color: colors.textSecondary }]}>{item.description}</Text>
         )}
 
         {/* Key Stats */}
@@ -236,7 +282,7 @@ export default function ItemDetailScreen() {
         </View>
 
         {/* Details */}
-        <Text style={styles.sectionTitle}>Details</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Details</Text>
         <Card variant="flat" padding={16} style={styles.detailCard}>
           {[
             { label: 'Category', value: item.category ? item.category.name : '—' },
@@ -250,15 +296,15 @@ export default function ItemDetailScreen() {
             { label: 'Location', value: item.location ?? '—' },
             { label: 'Location Detail', value: item.location_details ?? '—' },
           ].map(row => (
-            <View key={row.label} style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{row.label}</Text>
-              <Text style={styles.detailValue}>{row.value}</Text>
+            <View key={row.label} style={[styles.detailRow, { borderBottomColor: colors.divider }]}>
+              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{row.label}</Text>
+              <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{row.value}</Text>
             </View>
           ))}
         </Card>
 
         {/* Warranty */}
-        <Text style={styles.sectionTitle}>Warranty</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Warranty</Text>
         <Card
           variant="bordered"
           padding={16}
@@ -273,12 +319,12 @@ export default function ItemDetailScreen() {
                 {warranty.label}
               </Text>
               {item.warranty_expiry_date && (
-                <Text style={styles.warrantyDate}>
+                <Text style={[styles.warrantyDate, { color: colors.textSecondary }]}>
                   Expires: {formatDate(item.warranty_expiry_date)}
                 </Text>
               )}
               {item.warranty_provider && (
-                <Text style={styles.warrantyProvider}>Provider: {item.warranty_provider}</Text>
+                <Text style={[styles.warrantyProvider, { color: colors.textSecondary }]}>Provider: {item.warranty_provider}</Text>
               )}
             </View>
           </View>
@@ -286,7 +332,7 @@ export default function ItemDetailScreen() {
 
         {/* Maintenance Logs */}
         <View style={styles.maintenanceHeader}>
-          <Text style={styles.sectionTitle}>Maintenance</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Maintenance</Text>
           <Button
             title="Log Service"
             onPress={() => setShowMaintenanceModal(true)}
@@ -296,28 +342,28 @@ export default function ItemDetailScreen() {
         </View>
 
         {maintenanceLogs.length === 0 ? (
-          <Text style={styles.noMaintenanceText}>No maintenance logs yet.</Text>
+          <Text style={[styles.noMaintenanceText, { color: colors.textTertiary }]}>No maintenance logs yet.</Text>
         ) : (
           maintenanceLogs.map(log => (
             <Card key={log.id} variant="flat" padding={12} style={styles.maintenanceCard}>
               <View style={styles.maintenanceRow}>
                 <View style={styles.maintenanceIconWrapper}>
-                  <Ionicons name="build" size={20} color={Colors.textSecondary} />
+                  <Ionicons name="build" size={20} color={colors.textSecondary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.maintenanceType}>{log.maintenance_type ?? 'Service'}</Text>
+                  <Text style={[styles.maintenanceType, { color: colors.textPrimary }]}>{log.maintenance_type ?? 'Service'}</Text>
                   {log.description && (
-                    <Text style={styles.maintenanceDesc}>{log.description}</Text>
+                    <Text style={[styles.maintenanceDesc, { color: colors.textSecondary }]}>{log.description}</Text>
                   )}
-                  <Text style={styles.maintenanceDate}>{formatDate(log.performed_at)}</Text>
+                  <Text style={[styles.maintenanceDate, { color: colors.textTertiary }]}>{formatDate(log.performed_at)}</Text>
                   {log.next_scheduled_date && (
-                    <Text style={styles.maintenanceNext}>
+                    <Text style={[styles.maintenanceNext, { color: colors.info }]}>
                       Next: {formatDate(log.next_scheduled_date)}
                     </Text>
                   )}
                 </View>
                 {log.cost && (
-                  <Text style={styles.maintenanceCost}>{formatPrice(log.cost)}</Text>
+                  <Text style={[styles.maintenanceCost, { color: colors.primary }]}>{formatPrice(log.cost)}</Text>
                 )}
               </View>
             </Card>
@@ -326,8 +372,8 @@ export default function ItemDetailScreen() {
 
         {/* Metadata */}
         <View style={styles.metaRow}>
-          <Text style={styles.metaText}>Added {formatDate(item.created_at)}</Text>
-          <Text style={styles.metaText}>Updated {formatDate(item.updated_at)}</Text>
+          <Text style={[styles.metaText, { color: colors.textTertiary }]}>Added {formatDate(item.created_at)}</Text>
+          <Text style={[styles.metaText, { color: colors.textTertiary }]}>Updated {formatDate(item.updated_at)}</Text>
         </View>
       </View>
 
@@ -405,11 +451,12 @@ export default function ItemDetailScreen() {
 }
 
 function StatCard({ iconName, label, value }: { iconName: string; label: string; value: string }) {
+  const colors = useColors();
   return (
     <Card variant="flat" padding={12} style={statStyles.card}>
-      <Ionicons name={iconName as any} size={24} color={Colors.primary} style={statStyles.icon} />
-      <Text style={statStyles.value}>{value}</Text>
-      <Text style={statStyles.label}>{label}</Text>
+      <Ionicons name={iconName as any} size={24} color={colors.primary} style={statStyles.icon} />
+      <Text style={[statStyles.value, { color: colors.textPrimary }]}>{value}</Text>
+      <Text style={[statStyles.label, { color: colors.textSecondary }]}>{label}</Text>
     </Card>
   );
 }
@@ -417,12 +464,12 @@ function StatCard({ iconName, label, value }: { iconName: string; label: string;
 const statStyles = StyleSheet.create({
   card: { flex: 1, alignItems: 'center', margin: 4 },
   icon: { marginBottom: 6 },
-  value: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center' },
-  label: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
+  value: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  label: { fontSize: 11, marginTop: 2 },
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   imageContainer: { position: 'relative' },
   backBtn: {
     position: 'absolute',
@@ -453,27 +500,26 @@ const styles = StyleSheet.create({
   deleteBtn: { backgroundColor: 'rgba(239, 68, 68, 0.7)' },
   body: { padding: 16 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-  itemName: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary },
-  itemBrand: { fontSize: 14, color: Colors.textSecondary, marginTop: 2 },
-  description: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22, marginBottom: 16 },
+  itemName: { fontSize: 24, fontWeight: '800' },
+  itemBrand: { fontSize: 14, marginTop: 2 },
+  description: { fontSize: 15, lineHeight: 22, marginBottom: 16 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4, marginBottom: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, marginBottom: 12, marginTop: 4 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 4 },
   detailCard: { marginBottom: 20 },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 7,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
   },
-  detailLabel: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
-  detailValue: { fontSize: 13, color: Colors.textPrimary, fontWeight: '600', flex: 1, textAlign: 'right' },
+  detailLabel: { fontSize: 13, fontWeight: '500' },
+  detailValue: { fontSize: 13, fontWeight: '600', flex: 1, textAlign: 'right' },
   warrantyCard: { marginBottom: 20 },
   warrantyRow: { flexDirection: 'row', alignItems: 'flex-start' },
   warrantyIconWrapper: { marginRight: 12 },
   warrantyStatus: { fontSize: 16, fontWeight: '700' },
-  warrantyDate: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  warrantyProvider: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  warrantyDate: { fontSize: 13, marginTop: 2 },
+  warrantyProvider: { fontSize: 13, marginTop: 2 },
   maintenanceHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -481,20 +527,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 4,
   },
-  noMaintenanceText: { fontSize: 14, color: Colors.textTertiary, marginBottom: 16 },
+  noMaintenanceText: { fontSize: 14, marginBottom: 16 },
   maintenanceCard: { marginBottom: 8 },
   maintenanceRow: { flexDirection: 'row', alignItems: 'flex-start' },
   maintenanceIconWrapper: { marginRight: 10 },
-  maintenanceType: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  maintenanceDesc: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  maintenanceDate: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
-  maintenanceNext: { fontSize: 12, color: Colors.info, marginTop: 2, fontWeight: '500' },
-  maintenanceCost: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+  maintenanceType: { fontSize: 14, fontWeight: '600' },
+  maintenanceDesc: { fontSize: 13, marginTop: 2 },
+  maintenanceDate: { fontSize: 12, marginTop: 2 },
+  maintenanceNext: { fontSize: 12, marginTop: 2, fontWeight: '500' },
+  maintenanceCost: { fontSize: 13, fontWeight: '700' },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingTop: 8,
     paddingBottom: 32,
   },
-  metaText: { fontSize: 11, color: Colors.textTertiary },
+  metaText: { fontSize: 11 },
 });

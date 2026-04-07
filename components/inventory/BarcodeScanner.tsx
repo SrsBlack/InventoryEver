@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCAN_WINDOW_SIZE = 250;
@@ -20,6 +20,7 @@ interface BarcodeScannerProps {
 }
 
 export function BarcodeScanner({ onBarcodeScanned, onCancel }: BarcodeScannerProps) {
+  const colors = useColors();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [flashEnabled, setFlashEnabled] = useState(false);
@@ -28,24 +29,27 @@ export function BarcodeScanner({ onBarcodeScanned, onCancel }: BarcodeScannerPro
   if (!permission) {
     return (
       <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={colors.primary} size="large" />
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={styles.permissionContainer}>
-        <Ionicons name="barcode" size={64} color={Colors.textTertiary} />
-        <Text style={styles.permissionTitle}>Camera Permission Required</Text>
-        <Text style={styles.permissionDesc}>
+      <View style={[styles.permissionContainer, { backgroundColor: colors.background }]}>
+        <Ionicons name="barcode" size={64} color={colors.textTertiary} />
+        <Text style={[styles.permissionTitle, { color: colors.textPrimary }]}>Camera Permission Required</Text>
+        <Text style={[styles.permissionDesc, { color: colors.textSecondary }]}>
           Allow camera access to scan barcodes and QR codes.
         </Text>
-        <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-          <Text style={styles.permissionBtnText}>Grant Permission</Text>
+        <TouchableOpacity
+          style={[styles.permissionBtn, { backgroundColor: colors.info }]}
+          onPress={requestPermission}
+        >
+          <Text style={[styles.permissionBtnText, { color: colors.white }]}>Grant Permission</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelTextBtn} onPress={onCancel}>
-          <Text style={styles.cancelTextBtnText}>Cancel</Text>
+          <Text style={[styles.cancelTextBtnText, { color: colors.textSecondary }]}>Cancel</Text>
         </TouchableOpacity>
       </View>
     );
@@ -90,10 +94,10 @@ export function BarcodeScanner({ onBarcodeScanned, onCancel }: BarcodeScannerPro
       <View style={styles.overlayBottom} />
 
       {/* Corner brackets */}
-      <View style={[styles.corner, styles.cornerTopLeft]} />
-      <View style={[styles.corner, styles.cornerTopRight]} />
-      <View style={[styles.corner, styles.cornerBottomLeft]} />
-      <View style={[styles.corner, styles.cornerBottomRight]} />
+      <View style={[styles.corner, styles.cornerTopLeft, { borderColor: colors.primary }]} />
+      <View style={[styles.corner, styles.cornerTopRight, { borderColor: colors.primary }]} />
+      <View style={[styles.corner, styles.cornerBottomLeft, { borderColor: colors.primary }]} />
+      <View style={[styles.corner, styles.cornerBottomRight, { borderColor: colors.primary }]} />
 
       {/* Flash toggle */}
       <TouchableOpacity
@@ -103,22 +107,22 @@ export function BarcodeScanner({ onBarcodeScanned, onCancel }: BarcodeScannerPro
         <Ionicons
           name={flashEnabled ? 'flash' : 'flash-off'}
           size={24}
-          color={Colors.white}
+          color={colors.white}
         />
       </TouchableOpacity>
 
       {/* Instruction / scanned label */}
       <View style={styles.instructionWrapper}>
         {scannedLabel ? (
-          <Text style={styles.scannedText}>Scanned!</Text>
+          <Text style={[styles.scannedText, { color: colors.success }]}>Scanned!</Text>
         ) : (
-          <Text style={styles.instructionText}>Point camera at a barcode</Text>
+          <Text style={[styles.instructionText, { color: colors.white }]}>Point camera at a barcode</Text>
         )}
       </View>
 
       {/* Cancel */}
       <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
-        <Text style={styles.cancelBtnText}>Cancel</Text>
+        <Text style={[styles.cancelBtnText, { color: colors.white }]}>Cancel</Text>
       </TouchableOpacity>
     </View>
   );
@@ -136,31 +140,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
-    backgroundColor: Colors.background,
   },
   permissionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.textPrimary,
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
   permissionDesc: {
     fontSize: 14,
-    color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
   },
   permissionBtn: {
-    backgroundColor: Colors.info,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 12,
     marginBottom: 12,
   },
   permissionBtnText: {
-    color: Colors.white,
     fontWeight: '700',
     fontSize: 16,
   },
@@ -168,7 +167,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   cancelTextBtnText: {
-    color: Colors.textSecondary,
     fontSize: 15,
   },
   // Overlay: top, middle sides, bottom
@@ -211,7 +209,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 24,
     height: 24,
-    borderColor: Colors.primary,
     borderWidth: 3,
   },
   cornerTopLeft: {
@@ -264,13 +261,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   instructionText: {
-    color: Colors.white,
     fontSize: 15,
     fontWeight: '500',
     textAlign: 'center',
   },
   scannedText: {
-    color: Colors.success,
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
@@ -283,7 +278,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelBtnText: {
-    color: Colors.white,
     fontSize: 16,
     fontWeight: '600',
   },

@@ -8,13 +8,13 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 import { useWorkspaceContext } from '../../contexts/WorkspaceContext';
 import { useItems } from '../../hooks/useItems';
 import type { Item } from '../../types';
@@ -24,9 +24,10 @@ type ExportFormat = 'csv' | 'json';
 export default function ExportScreen() {
   const { activeWorkspace } = useWorkspaceContext();
   const { items } = useItems(activeWorkspace?.id);
+  const colors = useColors();
+  const router = useRouter();
   const [format, setFormat] = useState<ExportFormat>('csv');
   const [includeImageUrls, setIncludeImageUrls] = useState(true);
-  const [includeMaintenanceLogs, setIncludeMaintenanceLogs] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const buildCsv = (data: Item[]): string => {
@@ -105,14 +106,23 @@ export default function ExportScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Export Data' }} />
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
         <View style={styles.body}>
-          <Text style={styles.description}>Export your inventory data as CSV or JSON</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/settings/import')}
+            style={[styles.importBanner, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}
+          >
+            <Ionicons name="cloud-upload-outline" size={18} color={colors.primary} style={{ marginRight: 8 }} />
+            <Text style={[styles.importBannerText, { color: colors.primary }]}>Import data from CSV or JSON</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </TouchableOpacity>
+
+          <Text style={[styles.description, { color: colors.textSecondary }]}>Export your inventory data as CSV or JSON</Text>
 
           {/* Format picker */}
           <View style={styles.sectionHeader}>
-            <Ionicons name="document-outline" size={18} color={Colors.primary} style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>Export Format</Text>
+            <Ionicons name="document-outline" size={18} color={colors.primary} style={styles.sectionIcon} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Export Format</Text>
           </View>
           <View style={styles.formatRow}>
             <FormatButton label="CSV" active={format === 'csv'} onPress={() => setFormat('csv')} />
@@ -121,20 +131,14 @@ export default function ExportScreen() {
 
           {/* Options */}
           <View style={styles.sectionHeader}>
-            <Ionicons name="options-outline" size={18} color={Colors.primary} style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>What to Export</Text>
+            <Ionicons name="options-outline" size={18} color={colors.primary} style={styles.sectionIcon} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>What to Export</Text>
           </View>
           <Card variant="bordered" padding={0} style={styles.card}>
             <ToggleRow
               label="Include Image URLs"
               value={includeImageUrls}
               onToggle={() => setIncludeImageUrls(v => !v)}
-              isLast={false}
-            />
-            <ToggleRow
-              label="Include Maintenance Logs"
-              value={includeMaintenanceLogs}
-              onToggle={() => setIncludeMaintenanceLogs(v => !v)}
               isLast
             />
           </Card>
@@ -154,12 +158,17 @@ export default function ExportScreen() {
 }
 
 function FormatButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const colors = useColors();
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.formatBtn, active && styles.formatBtnActive]}
+      style={[
+        styles.formatBtn,
+        { borderColor: colors.border, backgroundColor: colors.surface },
+        active && { borderColor: colors.primary, backgroundColor: colors.primary + '10' },
+      ]}
     >
-      <Text style={[styles.formatBtnText, active && styles.formatBtnTextActive]}>{label}</Text>
+      <Text style={[styles.formatBtnText, { color: colors.textSecondary }, active && { color: colors.primary }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -175,25 +184,38 @@ function ToggleRow({
   onToggle: () => void;
   isLast: boolean;
 }) {
+  const colors = useColors();
   return (
-    <View style={[styles.row, !isLast && styles.rowBorder]}>
-      <Text style={styles.rowLabel}>{label}</Text>
+    <View style={[styles.row, { backgroundColor: colors.surface }, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
+      <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{label}</Text>
       <Switch
         value={value}
         onValueChange={onToggle}
-        trackColor={{ false: Colors.gray200, true: Colors.primary + '66' }}
-        thumbColor={value ? Colors.primary : Colors.gray400}
+        trackColor={{ false: colors.gray200, true: colors.primary + '66' }}
+        thumbColor={value ? colors.primary : colors.gray400}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   body: { padding: 16 },
+  importBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 16,
+  },
+  importBannerText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+  },
   description: {
     fontSize: 14,
-    color: Colors.textSecondary,
     marginBottom: 20,
     marginTop: 4,
   },
@@ -207,7 +229,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.textPrimary,
   },
   formatRow: {
     flexDirection: 'row',
@@ -219,21 +240,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: Colors.border,
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-  },
-  formatBtnActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10',
   },
   formatBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  formatBtnTextActive: {
-    color: Colors.primary,
   },
   card: { marginBottom: 24 },
   row: {
@@ -241,13 +252,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: Colors.surface,
   },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.divider },
   rowLabel: {
     flex: 1,
     fontSize: 15,
-    color: Colors.textPrimary,
     fontWeight: '500',
   },
   exportBtn: { marginTop: 4 },

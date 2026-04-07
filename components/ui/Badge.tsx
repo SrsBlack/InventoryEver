@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 interface BadgeProps {
   label: string;
@@ -12,21 +12,25 @@ interface BadgeProps {
 
 export function Badge({
   label,
-  color = Colors.white,
-  backgroundColor = Colors.primary,
+  color,
+  backgroundColor,
   size = 'md',
   style,
 }: BadgeProps) {
+  const colors = useColors();
+  const bgColor = backgroundColor ?? colors.primary;
+  const textColor = color ?? colors.white;
+
   return (
     <View
       style={[
         styles.badge,
-        { backgroundColor },
+        { backgroundColor: bgColor },
         size === 'sm' && styles.sm,
         style,
       ]}
     >
-      <Text style={[styles.text, { color }, size === 'sm' && styles.textSm]}>
+      <Text style={[styles.text, { color: textColor }, size === 'sm' && styles.textSm]}>
         {label}
       </Text>
     </View>

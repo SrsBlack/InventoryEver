@@ -9,6 +9,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Modal as RNModal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,23 +18,25 @@ import * as Sharing from 'expo-sharing';
 import { useWorkspaceContext } from '../../contexts/WorkspaceContext';
 import { useItems } from '../../hooks/useItems';
 import { ItemCard } from '../../components/inventory/ItemCard';
+import { BarcodeScanner } from '../../components/inventory/BarcodeScanner';
 import { BulkActionBar } from '../../components/inventory/BulkActionBar';
 import { SearchBar } from '../../components/inventory/SearchBar';
 import { TagManager } from '../../components/inventory/TagManager';
-import { Spinner } from '../../components/ui/Spinner';
+import { SkeletonInventoryList } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
-import { Colors } from '../../constants/colors';
+import { Spinner } from '../../components/ui/Spinner';
+import { useColors } from '../../hooks/useColors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Item, ItemFilters, ItemCondition, WarrantyStatus } from '../../types';
+import { LocationPicker } from '../../components/ui/LocationPicker';
 
 type ViewMode = 'grid' | 'list';
 
-const CATEGORIES_DEFAULT = [
-  { id: '', name: 'All', icon_emoji: '🌐', color_hex: Colors.gray500 },
-];
-
 export default function InventoryScreen() {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { activeWorkspace } = useWorkspaceContext();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -43,6 +46,7 @@ export default function InventoryScreen() {
 
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
   const { items, loading, hasMore, fetchItems, loadMore, deleteItem } = useItems(
     activeWorkspace?.id,
@@ -106,7 +110,7 @@ export default function InventoryScreen() {
     const headers = ['id', 'name', 'brand', 'model', 'condition', 'quantity', 'unit', 'location', 'purchase_price', 'currency', 'purchase_date'];
     const rows = selectedItems.map(item =>
       headers.map(h => {
-        const val = (item as Record<string, unknown>)[h];
+        const val = (item as unknown as Record<string, unknown>)[h];
         if (val === null || val === undefined) return '';
         const str = String(val);
         return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
@@ -129,10 +133,27 @@ export default function InventoryScreen() {
     }
   }, [selectedIds, items, exitSelectionMode]);
 
+  const handleBarcodeScanned = useCallback(
+    (data: string) => {
+      setShowBarcodeScanner(false);
+      const matches = items.filter(item => item.barcode === data);
+      if (matches.length === 0) {
+        Alert.alert('No Item Found', `No item found with barcode ${data}`);
+      } else if (matches.length === 1) {
+        router.push(`/item/${matches[0].id}` as `/${string}`);
+      } else {
+        // Multiple matches — filter the list by barcode
+        setFilters(f => ({ ...f, search: data }));
+      }
+    },
+    [items, router]
+  );
+
   const hasActiveFilters = !!(
     filters.category_id ||
     filters.condition ||
     filters.location ||
+    filters.location_id ||
     filters.min_price !== undefined ||
     filters.max_price !== undefined ||
     (filters.tag_ids && filters.tag_ids.length > 0) ||
@@ -165,30 +186,30 @@ export default function InventoryScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top + 8 }]}>
         {selectionMode ? (
           <>
-            <Text style={styles.headerTitle}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
               {selectedIds.size} selected
             </Text>
-            <TouchableOpacity onPress={exitSelectionMode} style={styles.cancelButton}>
-              <Text style={styles.cancelText}>Cancel</Text>
+            <TouchableOpacity onPress={exitSelectionMode} style={[styles.cancelButton, { backgroundColor: colors.gray200 }]}>
+              <Text style={[styles.cancelText, { color: colors.primary }]}>Cancel</Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
-            <Text style={styles.headerTitle}>INVENTORY</Text>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>INVENTORY</Text>
             <View style={styles.headerActions}>
               <TouchableOpacity
-                style={styles.viewToggle}
+                style={[styles.viewToggle, { backgroundColor: colors.gray200 }]}
                 onPress={() => setViewMode(v => (v === 'grid' ? 'list' : 'grid'))}
               >
                 <Ionicons
                   name={viewMode === 'grid' ? 'list' : 'grid'}
                   size={18}
-                  color={Colors.textPrimary}
+                  color={colors.textPrimary}
                 />
               </TouchableOpacity>
             </View>
@@ -196,39 +217,59 @@ export default function InventoryScreen() {
         )}
       </View>
 
-      {/* Search */}
-      <SearchBar
-        onSearch={handleSearch}
-        onFilterPress={() => setShowFilters(true)}
-        hasActiveFilters={hasActiveFilters}
-      />
+      {/* Search + Barcode scan */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchBarFlex}>
+          <SearchBar
+            onSearch={handleSearch}
+            onFilterPress={() => setShowFilters(true)}
+            hasActiveFilters={hasActiveFilters}
+          />
+        </View>
+        <TouchableOpacity
+          style={[styles.barcodeScanBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => setShowBarcodeScanner(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Scan barcode to find item"
+        >
+          <Ionicons name="barcode-outline" size={22} color={colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
 
       {/* Item count */}
       <View style={styles.countRow}>
-        <Text style={styles.countText}>
+        <Text style={[styles.countText, { color: colors.textSecondary }]}>
           {items.length} item{items.length !== 1 ? 's' : ''}
           {hasActiveFilters ? ' (filtered)' : ''}
         </Text>
         {hasActiveFilters && (
           <TouchableOpacity onPress={() => setFilters({})}>
-            <Text style={styles.clearFilters}>Clear filters</Text>
+            <Text style={[styles.clearFilters, { color: colors.primary }]}>Clear filters</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Items List */}
       {loading && items.length === 0 ? (
-        <Spinner fullScreen label="Loading inventory..." />
+        <SkeletonInventoryList />
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<Ionicons name="search" size={64} color={Colors.gray400} />}
-          title={hasActiveFilters ? 'No results' : 'No items yet'}
+          icon={<Ionicons name={hasActiveFilters ? 'search' : 'cube-outline'} size={48} color={colors.primary} />}
+          title={hasActiveFilters ? 'No results found' : 'Your inventory is empty'}
           description={
             hasActiveFilters
-              ? 'Try adjusting your search or filters.'
-              : 'Add your first item to start tracking your inventory.'
+              ? 'Try adjusting your search or clearing filters.'
+              : 'Start tracking everything you own in one place.'
           }
-          actionLabel={hasActiveFilters ? 'Clear Filters' : 'Add Item'}
+          bullets={
+            hasActiveFilters ? undefined : [
+              'Snap a photo to auto-fill details with AI',
+              'Scan barcodes for instant product lookup',
+              'Track warranties, value & maintenance',
+              'Organize by location, tag, or category',
+            ]
+          }
+          actionLabel={hasActiveFilters ? 'Clear Filters' : 'Add Your First Item'}
           onAction={() =>
             hasActiveFilters
               ? setFilters({})
@@ -252,13 +293,25 @@ export default function InventoryScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={Colors.primary}
-              colors={[Colors.primary]}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Barcode Scanner Modal (full screen) */}
+      <RNModal
+        visible={showBarcodeScanner}
+        animationType="slide"
+        onRequestClose={() => setShowBarcodeScanner(false)}
+      >
+        <BarcodeScanner
+          onBarcodeScanned={handleBarcodeScanned}
+          onCancel={() => setShowBarcodeScanner(false)}
+        />
+      </RNModal>
 
       {/* Filter Modal */}
       <Modal
@@ -286,13 +339,6 @@ export default function InventoryScreen() {
   );
 }
 
-const WARRANTY_OPTIONS: { value: WarrantyStatus; label: string; color: string }[] = [
-  { value: 'valid', label: 'Valid', color: Colors.success },
-  { value: 'expiring', label: 'Expiring', color: Colors.warning },
-  { value: 'expired', label: 'Expired', color: Colors.error },
-  { value: 'none', label: 'No Warranty', color: Colors.gray500 },
-];
-
 function FilterPanel({
   filters,
   workspaceId,
@@ -306,6 +352,15 @@ function FilterPanel({
   onApply: () => void;
   onReset: () => void;
 }) {
+  const colors = useColors();
+
+  const WARRANTY_OPTIONS: { value: WarrantyStatus; label: string; color: string }[] = [
+    { value: 'valid', label: 'Valid', color: colors.success },
+    { value: 'expiring', label: 'Expiring', color: colors.warning },
+    { value: 'expired', label: 'Expired', color: colors.error },
+    { value: 'none', label: 'No Warranty', color: colors.gray500 },
+  ];
+
   const CONDITIONS: { value: ItemCondition; label: string; iconName: React.ComponentProps<typeof Ionicons>['name'] }[] = [
     { value: 'new', label: 'New', iconName: 'sparkles' },
     { value: 'excellent', label: 'Excellent', iconName: 'star' },
@@ -325,15 +380,29 @@ function FilterPanel({
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 520 }}>
+      {/* Location */}
+      <Text style={[filterStyles.label, { color: colors.textSecondary }]}>LOCATION</Text>
+      <View style={{ marginBottom: 12 }}>
+        <LocationPicker
+          workspaceId={workspaceId}
+          value={filters.location_id ?? null}
+          onChange={locationId =>
+            onChange({ ...filters, location_id: locationId ?? undefined, location: undefined })
+          }
+          placeholder="Any location"
+        />
+      </View>
+
       {/* Condition */}
-      <Text style={filterStyles.label}>CONDITION</Text>
+      <Text style={[filterStyles.label, { color: colors.textSecondary }]}>CONDITION</Text>
       <View style={filterStyles.chipRow}>
         {CONDITIONS.map(c => (
           <TouchableOpacity
             key={c.value}
             style={[
               filterStyles.chip,
-              filters.condition === c.value && filterStyles.chipActive,
+              { backgroundColor: colors.gray200, borderColor: colors.border },
+              filters.condition === c.value && { backgroundColor: colors.primary + '18', borderColor: colors.primary },
             ]}
             onPress={() =>
               onChange({ ...filters, condition: filters.condition === c.value ? undefined : c.value })
@@ -342,13 +411,14 @@ function FilterPanel({
             <Ionicons
               name={c.iconName}
               size={13}
-              color={filters.condition === c.value ? Colors.primary : Colors.textSecondary}
+              color={filters.condition === c.value ? colors.primary : colors.textSecondary}
               style={filterStyles.chipIcon}
             />
             <Text
               style={[
                 filterStyles.chipText,
-                filters.condition === c.value && filterStyles.chipTextActive,
+                { color: colors.textSecondary },
+                filters.condition === c.value && { color: colors.primary, fontWeight: '700' },
               ]}
             >
               {c.label.toUpperCase()}
@@ -358,7 +428,7 @@ function FilterPanel({
       </View>
 
       {/* Tags */}
-      <Text style={filterStyles.label}>TAGS</Text>
+      <Text style={[filterStyles.label, { color: colors.textSecondary }]}>TAGS</Text>
       <View style={filterStyles.tagSection}>
         <TagManager
           mode="selector"
@@ -371,14 +441,14 @@ function FilterPanel({
       </View>
 
       {/* Price Range */}
-      <Text style={filterStyles.label}>PRICE RANGE</Text>
+      <Text style={[filterStyles.label, { color: colors.textSecondary }]}>PRICE RANGE</Text>
       <View style={filterStyles.rangeRow}>
-        <View style={filterStyles.rangeInput}>
-          <Ionicons name="cash-outline" size={16} color={Colors.textSecondary} style={filterStyles.rangeIcon} />
+        <View style={[filterStyles.rangeInput, { backgroundColor: colors.gray100, borderColor: colors.border }]}>
+          <Ionicons name="cash-outline" size={16} color={colors.textSecondary} style={filterStyles.rangeIcon} />
           <TextInput
-            style={filterStyles.rangeTextInput}
+            style={[filterStyles.rangeTextInput, { color: colors.textPrimary }]}
             placeholder="$0"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             keyboardType="numeric"
             value={filters.min_price !== undefined ? String(filters.min_price) : ''}
             onChangeText={val => {
@@ -387,13 +457,13 @@ function FilterPanel({
             }}
           />
         </View>
-        <Text style={filterStyles.rangeSeparator}>—</Text>
-        <View style={filterStyles.rangeInput}>
-          <Ionicons name="cash-outline" size={16} color={Colors.textSecondary} style={filterStyles.rangeIcon} />
+        <Text style={[filterStyles.rangeSeparator, { color: colors.textSecondary }]}>—</Text>
+        <View style={[filterStyles.rangeInput, { backgroundColor: colors.gray100, borderColor: colors.border }]}>
+          <Ionicons name="cash-outline" size={16} color={colors.textSecondary} style={filterStyles.rangeIcon} />
           <TextInput
-            style={filterStyles.rangeTextInput}
+            style={[filterStyles.rangeTextInput, { color: colors.textPrimary }]}
             placeholder="No limit"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             keyboardType="numeric"
             value={filters.max_price !== undefined ? String(filters.max_price) : ''}
             onChangeText={val => {
@@ -405,27 +475,27 @@ function FilterPanel({
       </View>
 
       {/* Date Range */}
-      <Text style={filterStyles.label}>DATE RANGE</Text>
+      <Text style={[filterStyles.label, { color: colors.textSecondary }]}>DATE RANGE</Text>
       <View style={filterStyles.rangeRow}>
-        <View style={filterStyles.rangeInput}>
-          <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} style={filterStyles.rangeIcon} />
+        <View style={[filterStyles.rangeInput, { backgroundColor: colors.gray100, borderColor: colors.border }]}>
+          <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} style={filterStyles.rangeIcon} />
           <TextInput
-            style={filterStyles.rangeTextInput}
+            style={[filterStyles.rangeTextInput, { color: colors.textPrimary }]}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             value={filters.purchase_date_from ?? ''}
             onChangeText={val =>
               onChange({ ...filters, purchase_date_from: val || undefined })
             }
           />
         </View>
-        <Text style={filterStyles.rangeSeparator}>to</Text>
-        <View style={filterStyles.rangeInput}>
-          <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} style={filterStyles.rangeIcon} />
+        <Text style={[filterStyles.rangeSeparator, { color: colors.textSecondary }]}>to</Text>
+        <View style={[filterStyles.rangeInput, { backgroundColor: colors.gray100, borderColor: colors.border }]}>
+          <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} style={filterStyles.rangeIcon} />
           <TextInput
-            style={filterStyles.rangeTextInput}
+            style={[filterStyles.rangeTextInput, { color: colors.textPrimary }]}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             value={filters.purchase_date_to ?? ''}
             onChangeText={val =>
               onChange({ ...filters, purchase_date_to: val || undefined })
@@ -435,7 +505,7 @@ function FilterPanel({
       </View>
 
       {/* Warranty Status */}
-      <Text style={filterStyles.label}>WARRANTY STATUS</Text>
+      <Text style={[filterStyles.label, { color: colors.textSecondary }]}>WARRANTY STATUS</Text>
       <View style={filterStyles.chipRow}>
         {WARRANTY_OPTIONS.map(opt => {
           const active = (filters.warranty_status ?? []).includes(opt.value);
@@ -444,6 +514,7 @@ function FilterPanel({
               key={opt.value}
               style={[
                 filterStyles.chip,
+                { backgroundColor: colors.gray200, borderColor: colors.border },
                 active && { backgroundColor: opt.color + '18', borderColor: opt.color },
               ]}
               onPress={() => toggleWarrantyStatus(opt.value)}
@@ -451,6 +522,7 @@ function FilterPanel({
               <Text
                 style={[
                   filterStyles.chipText,
+                  { color: colors.textSecondary },
                   active && { color: opt.color, fontWeight: '700' },
                 ]}
               >
@@ -462,21 +534,23 @@ function FilterPanel({
       </View>
 
       {/* Sort */}
-      <Text style={filterStyles.label}>SORT BY</Text>
+      <Text style={[filterStyles.label, { color: colors.textSecondary }]}>SORT BY</Text>
       <View style={filterStyles.chipRow}>
         {(['name', 'created_at', 'purchase_date', 'purchase_price'] as const).map(s => (
           <TouchableOpacity
             key={s}
             style={[
               filterStyles.chip,
-              filters.sort_by === s && filterStyles.chipActive,
+              { backgroundColor: colors.gray200, borderColor: colors.border },
+              filters.sort_by === s && { backgroundColor: colors.primary + '18', borderColor: colors.primary },
             ]}
             onPress={() => onChange({ ...filters, sort_by: s })}
           >
             <Text
               style={[
                 filterStyles.chipText,
-                filters.sort_by === s && filterStyles.chipTextActive,
+                { color: colors.textSecondary },
+                filters.sort_by === s && { color: colors.primary, fontWeight: '700' },
               ]}
             >
               {(s === 'created_at' ? 'Date Added' :
@@ -499,7 +573,6 @@ const filterStyles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.textSecondary,
     marginBottom: 8,
     marginTop: 4,
     letterSpacing: 1.5,
@@ -510,17 +583,13 @@ const filterStyles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: Colors.gray200,
     borderRadius: 4,
     marginRight: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   chipIcon: { marginRight: 4 },
-  chipActive: { backgroundColor: Colors.primary + '18', borderColor: Colors.primary },
-  chipText: { fontSize: 11, color: Colors.textSecondary, fontWeight: '600', letterSpacing: 0.5 },
-  chipTextActive: { color: Colors.primary, fontWeight: '700' },
+  chipText: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
   tagSection: {
     marginBottom: 16,
   },
@@ -534,12 +603,10 @@ const filterStyles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.gray100,
     borderRadius: 4,
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   rangeIcon: {
     marginRight: 6,
@@ -547,34 +614,29 @@ const filterStyles = StyleSheet.create({
   rangeTextInput: {
     flex: 1,
     fontSize: 13,
-    color: Colors.textPrimary,
     padding: 0,
   },
   rangeSeparator: {
     fontSize: 14,
-    color: Colors.textSecondary,
     fontWeight: '500',
     marginHorizontal: 2,
   },
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 56,
+    paddingTop: 0,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: Colors.textPrimary,
     letterSpacing: 2,
   },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
@@ -582,14 +644,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
-    backgroundColor: Colors.gray200,
   },
-  cancelText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+  cancelText: { fontSize: 13, fontWeight: '600' },
   viewToggle: {
     width: 36,
     height: 36,
     borderRadius: 6,
-    backgroundColor: Colors.gray200,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -600,8 +660,23 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     paddingTop: 8,
   },
-  countText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
-  clearFilters: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+  countText: { fontSize: 12, fontWeight: '500' },
+  clearFilters: { fontSize: 12, fontWeight: '600' },
   gridContainer: { padding: 6 },
   listContainer: { paddingVertical: 4 },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 16,
+  },
+  searchBarFlex: { flex: 1 },
+  barcodeScanBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    marginBottom: 8,
+  },
 });

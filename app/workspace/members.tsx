@@ -8,24 +8,18 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { MemberCard, MemberWithProfile } from '../../components/workspace/MemberCard';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 type Role = 'admin' | 'editor' | 'viewer';
 
 const INVITE_ROLES: Role[] = ['admin', 'editor', 'viewer'];
-
-const ROLE_COLORS: Record<Role, string> = {
-  admin: '#8B5CF6',
-  editor: Colors.info,
-  viewer: Colors.gray400,
-};
 
 interface WorkspaceMemberRow {
   id: string;
@@ -40,6 +34,14 @@ export default function MembersScreen() {
     name: string;
   }>();
   const { user } = useAuthContext();
+  const colors = useColors();
+  const router = useRouter();
+
+  const ROLE_COLORS: Record<Role, string> = {
+    admin: '#8B5CF6',
+    editor: colors.info,
+    viewer: colors.gray400,
+  };
 
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,21 +170,35 @@ export default function MembersScreen() {
       <Stack.Screen
         options={{
           title: workspaceName ? `${workspaceName} Members` : 'Members',
-          headerStyle: { backgroundColor: Colors.background },
-          headerTitleStyle: { fontWeight: '700', color: Colors.textPrimary },
+          headerStyle: { backgroundColor: colors.background },
+          headerTitleStyle: { fontWeight: '700', color: colors.textPrimary },
         }}
       />
 
       <FlatList
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
         data={members}
         keyExtractor={item => item.id}
         ListHeaderComponent={
           <>
             {isCurrentUserOwnerOrAdmin && (
-              <View style={styles.inviteSection}>
-                <Text style={styles.sectionTitle}>Invite Member</Text>
+              <View style={[styles.inviteSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={styles.inviteHeader}>
+                  <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginBottom: 0 }]}>Invite Member</Text>
+                  <TouchableOpacity
+                    style={[styles.inviteLinkBtn, { backgroundColor: colors.primary + '18', borderColor: colors.primary + '44' }]}
+                    onPress={() =>
+                      router.push(
+                        `/workspace/invite?id=${workspaceId}&name=${encodeURIComponent(workspaceName ?? '')}`
+                      )
+                    }
+                    activeOpacity={0.75}
+                  >
+                    <Ionicons name="link-outline" size={15} color={colors.primary} />
+                    <Text style={[styles.inviteLinkText, { color: colors.primary }]}>Share Invite Link</Text>
+                  </TouchableOpacity>
+                </View>
                 <Input
                   label="Email Address"
                   placeholder="Enter email to invite"
@@ -193,13 +209,14 @@ export default function MembersScreen() {
                   icon="mail-outline"
                 />
 
-                <Text style={styles.roleLabel}>Role</Text>
+                <Text style={[styles.roleLabel, { color: colors.textPrimary }]}>Role</Text>
                 <View style={styles.roleChips}>
                   {INVITE_ROLES.map(role => (
                     <TouchableOpacity
                       key={role}
                       style={[
                         styles.roleChip,
+                        { borderColor: colors.border, backgroundColor: colors.gray50 },
                         selectedRole === role && { backgroundColor: ROLE_COLORS[role] },
                       ]}
                       onPress={() => setSelectedRole(role)}
@@ -208,6 +225,7 @@ export default function MembersScreen() {
                       <Text
                         style={[
                           styles.roleChipText,
+                          { color: colors.textSecondary },
                           selectedRole === role && styles.roleChipTextActive,
                         ]}
                       >
@@ -228,13 +246,13 @@ export default function MembersScreen() {
               </View>
             )}
 
-            <Text style={styles.sectionTitle}>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
               {loading ? 'Members' : `Members (${members.length})`}
             </Text>
 
             {loading && (
               <ActivityIndicator
-                color={Colors.primary}
+                color={colors.primary}
                 size="large"
                 style={styles.spinner}
               />
@@ -252,8 +270,8 @@ export default function MembersScreen() {
         ListEmptyComponent={
           loading ? null : (
             <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={48} color={Colors.gray300} />
-              <Text style={styles.emptyText}>
+              <Ionicons name="people-outline" size={48} color={colors.gray300} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 No other members yet. Invite someone to collaborate!
               </Text>
             </View>
@@ -267,17 +285,14 @@ export default function MembersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   content: {
     padding: 16,
     paddingBottom: 32,
   },
   inviteSection: {
-    backgroundColor: Colors.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
     padding: 16,
     marginBottom: 20,
     shadowColor: '#000',
@@ -286,16 +301,33 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  inviteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  inviteLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  inviteLinkText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.textPrimary,
     marginBottom: 12,
   },
   roleLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: 8,
   },
   roleChips: {
@@ -308,16 +340,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: Colors.gray50,
   },
   roleChipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.textSecondary,
   },
   roleChipTextActive: {
-    color: Colors.white,
+    color: '#ffffff',
   },
   inviteBtn: {
     marginTop: 4,
@@ -332,7 +361,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: Colors.textSecondary,
     textAlign: 'center',
     maxWidth: 260,
     lineHeight: 20,

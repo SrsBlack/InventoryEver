@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -33,39 +33,52 @@ export function Input({
   required,
   ...props
 }: InputProps) {
+  const colors = useColors();
   const [focused, setFocused] = useState(false);
 
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
-        <Text style={styles.label}>
+        <Text style={[styles.label, { color: colors.textPrimary }]}>
           {label}
-          {required && <Text style={styles.required}> *</Text>}
+          {required && <Text style={{ color: colors.error }}> *</Text>}
         </Text>
       )}
       <View
         style={[
           styles.inputWrapper,
-          focused && styles.inputFocused,
-          !!error && styles.inputError,
+          { borderColor: colors.border, backgroundColor: colors.gray100 },
+          focused && { borderColor: colors.primary, shadowColor: colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 2 },
+          !!error && { borderColor: colors.error },
         ]}
       >
-        {icon && <Ionicons name={icon as any} size={18} color={focused ? Colors.primary : Colors.gray400} />}
+        {icon && <Ionicons name={icon as any} size={18} color={focused ? colors.primary : colors.gray400} />}
         <TextInput
-          style={[styles.input, icon && styles.inputWithIcon, rightIcon && styles.inputWithRightIcon]}
-          placeholderTextColor={Colors.gray400}
+          style={[
+            styles.input,
+            { color: colors.textPrimary },
+            icon && styles.inputWithIcon,
+            rightIcon && styles.inputWithRightIcon,
+          ]}
+          placeholderTextColor={colors.gray400}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          accessibilityLabel={label ?? props.placeholder}
           {...props}
         />
         {rightIcon && (
-          <TouchableOpacity onPress={onRightIconPress} style={styles.rightIconBtn}>
-            <Ionicons name={rightIcon as any} size={18} color={Colors.gray400} />
+          <TouchableOpacity
+            onPress={onRightIconPress}
+            style={styles.rightIconBtn}
+            accessibilityRole="button"
+            accessibilityLabel={rightIcon}
+          >
+            <Ionicons name={rightIcon as any} size={18} color={colors.gray400} />
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={styles.error}>{error}</Text>}
-      {hint && !error && <Text style={styles.hint}>{hint}</Text>}
+      {error && <Text style={[styles.hint, { color: colors.error }]}>{error}</Text>}
+      {hint && !error && <Text style={[styles.hint, { color: colors.textTertiary }]}>{hint}</Text>}
     </View>
   );
 }
@@ -77,38 +90,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: 6,
-  },
-  required: {
-    color: Colors.error,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: 6,
-    backgroundColor: Colors.gray100,
     paddingHorizontal: 14,
-  },
-  inputFocused: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.gray100,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  inputError: {
-    borderColor: Colors.error,
   },
   input: {
     flex: 1,
     paddingVertical: 13,
     fontSize: 15,
-    color: Colors.textPrimary,
   },
   inputWithIcon: {
     paddingLeft: 8,
@@ -116,21 +110,11 @@ const styles = StyleSheet.create({
   inputWithRightIcon: {
     paddingRight: 8,
   },
-  icon: {
-    fontSize: 18,
-  },
   rightIconBtn: {
     padding: 4,
   },
-  error: {
-    fontSize: 12,
-    color: Colors.error,
-    marginTop: 4,
-    marginLeft: 4,
-  },
   hint: {
     fontSize: 12,
-    color: Colors.textTertiary,
     marginTop: 4,
     marginLeft: 4,
   },

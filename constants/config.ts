@@ -6,13 +6,9 @@ export const Config = {
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
 
-  // AI Services
-  googleVisionApiKey: process.env.EXPO_PUBLIC_GOOGLE_VISION_API_KEY ?? '',
-  openAiApiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? '',
-  veryfiClientId: process.env.EXPO_PUBLIC_VERYFI_CLIENT_ID ?? '',
-  veryfiClientSecret: process.env.EXPO_PUBLIC_VERYFI_CLIENT_SECRET ?? '',
-  veryfiUsername: process.env.EXPO_PUBLIC_VERYFI_USERNAME ?? '',
-  veryfiApiKey: process.env.EXPO_PUBLIC_VERYFI_API_KEY ?? '',
+  // AI Services — keys are server-side only, set as Supabase Edge Function secrets.
+  // Do NOT add EXPO_PUBLIC_ AI keys here; they would be exposed in the client bundle.
+  // Deploy: supabase secrets set OPENAI_API_KEY=... GOOGLE_VISION_API_KEY=... VERYFI_CLIENT_ID=... VERYFI_API_KEY=... VERYFI_USERNAME=... --project-ref senmpagpravittvayecz
 
   // RevenueCat
   revenueCatIosKey: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? '',

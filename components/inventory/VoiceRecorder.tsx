@@ -10,7 +10,7 @@ import {
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 import { Button } from '../ui/Button';
 
 interface VoiceRecorderProps {
@@ -28,6 +28,7 @@ function formatTime(seconds: number): string {
 }
 
 export function VoiceRecorder({ onRecordingComplete, onCancel, isProcessing }: VoiceRecorderProps) {
+  const colors = useColors();
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [elapsed, setElapsed] = useState(0);
   const recordingRef = useRef<Audio.Recording | null>(null);
@@ -146,9 +147,9 @@ export function VoiceRecorder({ onRecordingComplete, onCancel, isProcessing }: V
   }[recordingState];
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Voice Input</Text>
-      <Text style={styles.subtitle}>Describe your item and AI will fill in the details</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>Voice Input</Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Describe your item and AI will fill in the details</Text>
 
       <View style={styles.recorderArea}>
         {/* Pulse ring */}
@@ -157,6 +158,7 @@ export function VoiceRecorder({ onRecordingComplete, onCancel, isProcessing }: V
             style={[
               styles.pulseRing,
               {
+                backgroundColor: colors.secondary,
                 transform: [{ scale: pulseScale }],
                 opacity: pulseOpacity,
               },
@@ -171,30 +173,30 @@ export function VoiceRecorder({ onRecordingComplete, onCancel, isProcessing }: V
           activeOpacity={0.85}
         >
           {isInProgress ? (
-            <View style={[styles.micButton, styles.micButtonProcessing]}>
-              <ActivityIndicator color={Colors.white} size="large" />
+            <View style={[styles.micButton, { backgroundColor: colors.gray400 }]}>
+              <ActivityIndicator color={colors.white} size="large" />
             </View>
           ) : (
             <LinearGradient
-              colors={isRecording ? Colors.gradientSecondary : Colors.gradientPrimary}
+              colors={isRecording ? colors.gradientSecondary : colors.gradientPrimary}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.micButton}
+              style={[styles.micButton, { shadowColor: colors.black }]}
             >
               <Ionicons
                 name={isRecording ? 'stop' : 'mic'}
                 size={36}
-                color={Colors.white}
+                color={colors.white}
               />
             </LinearGradient>
           )}
         </TouchableOpacity>
 
         {/* Timer */}
-        <Text style={styles.timer}>{formatTime(elapsed)}</Text>
+        <Text style={[styles.timer, { color: colors.textPrimary }]}>{formatTime(elapsed)}</Text>
 
         {/* Status */}
-        <Text style={[styles.status, isRecording && styles.statusRecording]}>
+        <Text style={[styles.status, { color: isRecording ? colors.secondary : colors.textSecondary }, isRecording && styles.statusRecording]}>
           {statusText}
         </Text>
       </View>
@@ -215,17 +217,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: Colors.background,
   },
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: Colors.textPrimary,
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 15,
-    color: Colors.textSecondary,
     marginBottom: 48,
   },
   recorderArea: {
@@ -238,7 +237,6 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: Colors.secondary,
   },
   micButton: {
     width: 80,
@@ -246,32 +244,25 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 6,
-  },
-  micButtonProcessing: {
-    backgroundColor: Colors.gray400,
   },
   timer: {
     marginTop: 28,
     fontSize: 36,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
-    color: Colors.textPrimary,
     letterSpacing: 2,
     fontFamily: 'monospace',
   },
   status: {
     marginTop: 12,
     fontSize: 15,
-    color: Colors.textSecondary,
     fontWeight: '500',
   },
   statusRecording: {
-    color: Colors.secondary,
     fontWeight: '700',
   },
   cancelBtn: {

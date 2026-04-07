@@ -15,9 +15,10 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 export default function SignUp() {
+  const colors = useColors();
   const { signUp, loading, error, clearError } = useAuthContext();
   const router = useRouter();
 
@@ -59,13 +60,13 @@ export default function SignUp() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={[styles.flex, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <LinearGradient colors={Colors.gradientPrimary} style={styles.header}>
-        <Ionicons name="sparkles" size={48} color={Colors.white} style={styles.logo} />
-        <Text style={styles.headerTitle}>Create Account</Text>
-        <Text style={styles.headerSubtitle}>Start organizing everything you own</Text>
+      <LinearGradient colors={colors.gradientPrimary} style={styles.header}>
+        <Ionicons name="sparkles" size={48} color={colors.white} style={styles.logo} />
+        <Text style={[styles.headerTitle, { color: colors.white }]}>Create Account</Text>
+        <Text style={[styles.headerSubtitle, { color: colors.white + 'CC' }]}>Start organizing everything you own</Text>
       </LinearGradient>
 
       <ScrollView
@@ -75,9 +76,9 @@ export default function SignUp() {
         showsVerticalScrollIndicator={false}
       >
         {error && (
-          <View style={styles.errorBanner}>
-            <Ionicons name="alert-circle" size={16} color={Colors.error} />
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={[styles.errorBanner, { backgroundColor: colors.errorLight }]}>
+            <Ionicons name="alert-circle" size={16} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
           </View>
         )}
 
@@ -127,10 +128,10 @@ export default function SignUp() {
         />
 
         <View style={styles.termsContainer}>
-          <Text style={styles.termsText}>
+          <Text style={[styles.termsText, { color: colors.textSecondary }]}>
             By creating an account, you agree to our{' '}
-            <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-            <Text style={styles.termsLink}>Privacy Policy</Text>.
+            <Text style={[styles.termsLink, { color: colors.primary }]}>Terms of Service</Text> and{' '}
+            <Text style={[styles.termsLink, { color: colors.primary }]}>Privacy Policy</Text>.
           </Text>
         </View>
 
@@ -147,8 +148,8 @@ export default function SignUp() {
           style={styles.signInBtn}
           onPress={() => router.back()}
         >
-          <Text style={styles.signInText}>
-            Already have an account? <Text style={styles.signInLink}>Sign in</Text>
+          <Text style={[styles.signInText, { color: colors.textSecondary }]}>
+            Already have an account? <Text style={[styles.signInLink, { color: colors.primary }]}>Sign in</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -157,7 +158,7 @@ export default function SignUp() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: Colors.background },
+  flex: { flex: 1 },
   header: {
     paddingTop: 64,
     paddingBottom: 32,
@@ -168,18 +169,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: Colors.white,
     marginBottom: 6,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: Colors.white + 'CC',
     textAlign: 'center',
   },
   form: { flex: 1 },
   formContent: { padding: 24, paddingBottom: 48 },
   errorBanner: {
-    backgroundColor: Colors.errorLight,
     padding: 12,
     borderRadius: 10,
     marginBottom: 16,
@@ -187,11 +185,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  errorText: { color: Colors.error, fontSize: 14, fontWeight: '500', flex: 1 },
+  errorText: { fontSize: 14, fontWeight: '500', flex: 1 },
   termsContainer: { marginBottom: 20 },
-  termsText: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
-  termsLink: { color: Colors.primary, fontWeight: '500' },
+  termsText: { fontSize: 13, lineHeight: 18 },
+  termsLink: { fontWeight: '500' },
   signInBtn: { alignItems: 'center', marginTop: 20 },
-  signInText: { fontSize: 15, color: Colors.textSecondary },
-  signInLink: { color: Colors.primary, fontWeight: '700' },
+  signInText: { fontSize: 15 },
+  signInLink: { fontWeight: '700' },
 });

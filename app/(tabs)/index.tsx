@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,10 +17,12 @@ import { useSubscriptionContext } from '../../contexts/SubscriptionContext';
 import { useItems } from '../../hooks/useItems';
 import { useAlerts } from '../../hooks/useAlerts';
 import { useColors } from '../../hooks/useColors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { Spinner } from '../../components/ui/Spinner';
+import { SkeletonDashboard } from '../../components/ui/Skeleton';
 import { formatPrice, formatDate, warrantyStatus } from '../../lib/utils';
+import { loadSampleData } from '../../lib/sampleData';
 import { ValueByCategory } from '../../components/dashboard/ValueByCategory';
 import { ConditionBreakdown } from '../../components/dashboard/ConditionBreakdown';
 import { RecentActivity } from '../../components/dashboard/RecentActivity';
@@ -29,12 +32,14 @@ const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { profile } = useAuthContext();
   const { activeWorkspace } = useWorkspaceContext();
   const { tier } = useSubscriptionContext();
   const { items, loading, fetchItems } = useItems(activeWorkspace?.id);
   const { alerts, unreadCount, fetchAlerts } = useAlerts(activeWorkspace?.id);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingSample, setLoadingSample] = useState(false);
   const colors = useColors();
 
   const onRefresh = useCallback(async () => {
@@ -47,11 +52,25 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [fetchItems, fetchAlerts]);
 
+  const handleLoadSampleData = async () => {
+    if (!activeWorkspace?.id) return;
+    setLoadingSample(true);
+    const { count, error } = await loadSampleData(activeWorkspace.id);
+    setLoadingSample(false);
+    if (error) {
+      Alert.alert('Error', `Could not load sample data: ${error}`);
+    } else {
+      await fetchItems(true);
+      Alert.alert('Sample Data Loaded', `Added ${count} demo items. Explore the app, then clear them from Settings → Export.`);
+    }
+  };
+
   const totalValue = items.reduce((sum, item) => sum + (item.purchase_price ?? 0) * item.quantity, 0);
   const warrantyWarnings = items.filter(i => {
     const d = warrantyStatus(i.warranty_expiry_date);
     return d.label !== 'No warranty' && d.label !== 'Valid' && d.label !== 'Expired';
   });
+  const itemsNeedingAttention = warrantyWarnings.length + unreadCount;
 
   const recentItems = items.slice(0, 5);
 
@@ -59,7 +78,7 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  if (loading && items.length === 0) return <Spinner fullScreen label="Loading..." />;
+  if (loading && items.length === 0) return <SkeletonDashboard />;
 
   return (
     <ScrollView
@@ -75,7 +94,7 @@ export default function HomeScreen() {
       }
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, paddingTop: insets.top + 8 }]}>
         <View style={styles.headerContent}>
           <View>
             <Text style={[styles.greeting, { color: colors.textSecondary }]}>{greeting}, {firstName}</Text>
@@ -105,17 +124,22 @@ export default function HomeScreen() {
 
         {/* Stats row */}
         <View style={styles.statsRow}>
-          <View style={[styles.statCard, { backgroundColor: colors.gray200, borderLeftColor: colors.primary }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.gray100, borderLeftColor: colors.primary }]}>
             <Text style={[styles.statNum, { color: colors.textPrimary }]}>{items.length}</Text>
             <Text style={[styles.statLabel, { color: colors.textTertiary }]}>ITEMS</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: colors.gray200, borderLeftColor: colors.warning }]}>
-            <Text style={[styles.statNum, { color: colors.textPrimary }]}>{formatPrice(totalValue)}</Text>
-            <Text style={[styles.statLabel, { color: colors.textTertiary }]}>TOTAL VALUE</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.gray100, borderLeftColor: colors.accent }]}>
+            <Text style={[styles.statNum, { color: colors.textPrimary }]} numberOfLines={1}>{formatPrice(totalValue)}</Text>
+            <Text style={[styles.statLabel, { color: colors.textTertiary }]}>ASSET VALUE</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: colors.gray200, borderLeftColor: colors.accent }]}>
-            <Text style={[styles.statNum, { color: colors.textPrimary }]}>{unreadCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.textTertiary }]}>ALERTS</Text>
+          <View style={[
+            styles.statCard,
+            { backgroundColor: colors.gray100, borderLeftColor: itemsNeedingAttention > 0 ? colors.error : colors.success },
+          ]}>
+            <Text style={[styles.statNum, { color: itemsNeedingAttention > 0 ? colors.error : colors.success }]}>
+              {itemsNeedingAttention}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textTertiary }]}>NEED ATTENTION</Text>
           </View>
         </View>
       </View>
@@ -258,21 +282,63 @@ export default function HomeScreen() {
               <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>This Week</Text>
               <RecentActivity items={items} />
             </Card>
+
+            <TouchableOpacity
+              style={[styles.analyticsBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => router.push('/analytics')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="bar-chart" size={16} color={colors.primary} />
+              <Text style={[styles.analyticsBtnText, { color: colors.primary }]}>View Full Analytics</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+            </TouchableOpacity>
           </>
         )}
 
         {items.length === 0 && !loading && (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="cube-outline" size={64} color={colors.gray400} style={styles.emptyIcon} />
-            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No items yet</Text>
+          <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.emptyIconWrap, { backgroundColor: colors.primary + '15' }]}>
+              <Ionicons name="cube-outline" size={48} color={colors.primary} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Your inventory awaits</Text>
             <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-              Start by adding your first item. Use AI to auto-fill details from a photo.
+              Track everything you own — at home, in the office, or across your business.
             </Text>
+
+            {/* Feature highlights */}
+            <View style={[styles.emptyFeatures, { borderColor: colors.border }]}>
+              {[
+                { icon: 'camera', text: 'AI fills in details from a photo or barcode' },
+                { icon: 'shield-checkmark', text: 'Warranty & maintenance alerts' },
+                { icon: 'location', text: 'Organize by rooms, areas, and spots' },
+                { icon: 'people', text: 'Share with your team or family' },
+              ].map(f => (
+                <View key={f.icon} style={styles.emptyFeatureRow}>
+                  <Ionicons name={f.icon as any} size={16} color={colors.primary} style={{ marginRight: 10 }} />
+                  <Text style={[styles.emptyFeatureText, { color: colors.textSecondary }]}>{f.text}</Text>
+                </View>
+              ))}
+            </View>
+
             <TouchableOpacity
               style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
               onPress={() => router.push('/(tabs)/add-item')}
+              accessibilityRole="button"
             >
+              <Ionicons name="add" size={18} color="#fff" style={{ marginRight: 6 }} />
               <Text style={styles.emptyBtnText}>Add Your First Item</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.emptyBtnSecondary, { borderColor: colors.border }]}
+              onPress={handleLoadSampleData}
+              disabled={loadingSample}
+              accessibilityRole="button"
+            >
+              <Ionicons name="flask-outline" size={16} color={colors.textSecondary} style={{ marginRight: 6 }} />
+              <Text style={[styles.emptyBtnSecondaryText, { color: colors.textSecondary }]}>
+                {loadingSample ? 'Loading…' : 'Explore with sample data'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -284,7 +350,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    paddingTop: 56,
+    paddingTop: 0,
     paddingBottom: 16,
     paddingHorizontal: 16,
   },
@@ -397,21 +463,60 @@ const styles = StyleSheet.create({
   itemName: { fontSize: 13, fontWeight: '600' },
   itemMeta: { fontSize: 11, marginTop: 1 },
   itemPrice: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  emptyContainer: { alignItems: 'center', paddingVertical: 40 },
-  emptyIcon: { marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', marginBottom: 6 },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  emptyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
   emptyDesc: {
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
     marginBottom: 20,
   },
-  emptyBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 6,
+  emptyFeatures: {
+    width: '100%',
+    borderTopWidth: 1,
+    paddingTop: 16,
+    marginBottom: 20,
+    gap: 10,
   },
-  emptyBtnText: { fontWeight: '700', fontSize: 14, color: '#FFFFFF' },
+  emptyFeatureRow: { flexDirection: 'row', alignItems: 'center' },
+  emptyFeatureText: { fontSize: 13, lineHeight: 20, flex: 1 },
+  emptyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 13,
+    borderRadius: 10,
+    width: '100%',
+    marginBottom: 10,
+  },
+  emptyBtnText: { fontWeight: '700', fontSize: 15, color: '#FFFFFF' },
+  emptyBtnSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 11,
+    borderRadius: 10,
+    borderWidth: 1,
+    width: '100%',
+  },
+  emptyBtnSecondaryText: { fontWeight: '600', fontSize: 14 },
   chartCard: {
     marginBottom: 10,
     borderRadius: 6,
@@ -420,5 +525,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     marginBottom: 10,
+  },
+  analyticsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  analyticsBtnText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import type { Alert } from '../types';
 
@@ -22,8 +23,23 @@ export function useAlerts(workspaceId: string | undefined) {
       const alertList = (data ?? []) as Alert[];
       setAlerts(alertList);
       setUnreadCount(alertList.filter(a => !a.is_read).length);
+      try {
+        await AsyncStorage.setItem(`offline:alerts:${workspaceId}`, JSON.stringify(alertList));
+      } catch {
+        // Storage unavailable — skip cache write
+      }
     } catch (err) {
       console.warn('Failed to fetch alerts:', err);
+      try {
+        const raw = await AsyncStorage.getItem(`offline:alerts:${workspaceId}`);
+        if (raw) {
+          const cached = JSON.parse(raw) as Alert[];
+          setAlerts(cached);
+          setUnreadCount(cached.filter(a => !a.is_read).length);
+        }
+      } catch {
+        // Cache read failed — leave state as-is
+      }
     } finally {
       setLoading(false);
     }
@@ -32,6 +48,35 @@ export function useAlerts(workspaceId: string | undefined) {
   useEffect(() => {
     fetchAlerts();
   }, [fetchAlerts]);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    const sub = supabase
+      .channel(`alerts:${workspaceId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'alerts', filter: `workspace_id=eq.${workspaceId}` },
+        payload => {
+          if (payload.eventType === 'INSERT') {
+            const newAlert = payload.new as Alert;
+            setAlerts(prev => [newAlert, ...prev]);
+            if (!newAlert.is_read) setUnreadCount(prev => prev + 1);
+          } else if (payload.eventType === 'UPDATE') {
+            setAlerts(prev =>
+              prev.map(a => (a.id === (payload.new as Alert).id ? (payload.new as Alert) : a))
+            );
+            setUnreadCount(prev =>
+              Math.max(0, prev + ((payload.new as Alert).is_read ? -1 : 0))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            const removed = payload.old as Partial<Alert>;
+            setAlerts(prev => prev.filter(a => a.id !== removed.id));
+          }
+        }
+      )
+      .subscribe();
+    return () => { sub.unsubscribe(); };
+  }, [workspaceId]);
 
   const markRead = useCallback(async (alertId: string) => {
     await supabase.from('alerts').update({ is_read: true }).eq('id', alertId);

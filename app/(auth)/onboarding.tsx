@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 const { width } = Dimensions.get('window');
 
@@ -21,7 +21,7 @@ interface OnboardingPage {
   title: string;
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
-  circleColor: string;
+  circleColorKey: 'primary' | 'accent' | 'secondary' | 'warning' | 'info' | 'success';
 }
 
 const PAGES: OnboardingPage[] = [
@@ -29,29 +29,54 @@ const PAGES: OnboardingPage[] = [
     id: '1',
     title: 'Inventory Everything',
     description:
-      'Track, organize, and manage everything you own in one beautiful app.',
+      'Track, organize, and manage everything you own — home, office, or warehouse — all in one place.',
     icon: 'cube',
-    circleColor: Colors.primary,
+    circleColorKey: 'primary',
   },
   {
     id: '2',
     title: 'AI-Powered Smart Entry',
     description:
-      'Just snap a photo or speak — AI identifies your items and fills in the details automatically.',
+      'Just snap a photo, scan a barcode, or speak — AI fills in the details automatically.',
     icon: 'camera',
-    circleColor: Colors.accent,
+    circleColorKey: 'accent',
   },
   {
     id: '3',
+    title: 'Organize by Location',
+    description:
+      'Create rooms, areas, and spots. Scan QR codes to instantly find exactly where anything lives.',
+    icon: 'location',
+    circleColorKey: 'secondary',
+  },
+  {
+    id: '4',
     title: 'Never Miss a Thing',
     description:
-      'Get alerts for expiring warranties, scheduled maintenance, and low stock items.',
-    icon: 'notifications',
-    circleColor: Colors.secondary,
+      'Smart alerts for expiring warranties, overdue maintenance, and low stock. Track depreciation and generate insurance reports.',
+    icon: 'shield-checkmark',
+    circleColorKey: 'warning',
+  },
+  {
+    id: '5',
+    title: 'Lend, Track & Recover',
+    description:
+      'Log who borrowed what and when it\'s due back. Build smart collections and filter your inventory in seconds.',
+    icon: 'swap-horizontal',
+    circleColorKey: 'info',
+  },
+  {
+    id: '6',
+    title: 'Built for Teams & Business',
+    description:
+      'Invite your team, assign roles, and collaborate on shared workspaces. Export data and view powerful analytics.',
+    icon: 'people',
+    circleColorKey: 'success',
   },
 ];
 
 export default function Onboarding() {
+  const colors = useColors();
   const router = useRouter();
   const flatListRef = useRef<FlatList<OnboardingPage>>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -65,13 +90,23 @@ export default function Onboarding() {
     handleFinish();
   };
 
+  const handleNext = () => {
+    if (activeIndex < PAGES.length - 1) {
+      const nextIndex = activeIndex + 1;
+      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      setActiveIndex(nextIndex);
+    } else {
+      handleFinish();
+    }
+  };
+
   const renderItem = ({ item }: ListRenderItemInfo<OnboardingPage>) => (
     <View style={styles.page}>
-      <View style={[styles.iconCircle, { backgroundColor: item.circleColor }]}>
-        <Ionicons name={item.icon} size={120} color={Colors.white} />
+      <View style={[styles.iconCircle, { backgroundColor: colors[item.circleColorKey] }]}>
+        <Ionicons name={item.icon} size={100} color={colors.white} />
       </View>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.description}>{item.description}</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>{item.title}</Text>
+      <Text style={[styles.description, { color: colors.textSecondary }]}>{item.description}</Text>
     </View>
   );
 
@@ -85,14 +120,23 @@ export default function Onboarding() {
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
+  const isLast = activeIndex === PAGES.length - 1;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Skip button */}
-      {activeIndex < PAGES.length - 1 && (
+      {!isLast && (
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={[styles.skipText, { color: colors.textSecondary }]}>Skip</Text>
         </TouchableOpacity>
       )}
+
+      {/* Page counter */}
+      <View style={styles.pageCounter}>
+        <Text style={[styles.pageCounterText, { color: colors.textTertiary }]}>
+          {activeIndex + 1} / {PAGES.length}
+        </Text>
+      </View>
 
       {/* Swipeable pages */}
       <FlatList
@@ -106,6 +150,7 @@ export default function Onboarding() {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         style={styles.flatList}
+        scrollEventThrottle={16}
       />
 
       {/* Bottom section */}
@@ -117,29 +162,36 @@ export default function Onboarding() {
               key={index}
               style={[
                 styles.dot,
-                index === activeIndex ? styles.dotActive : styles.dotInactive,
+                index === activeIndex
+                  ? { width: 28, backgroundColor: colors.primary }
+                  : { width: 8, backgroundColor: colors.gray300 },
               ]}
             />
           ))}
         </View>
 
-        {/* Get Started button — only on last page */}
-        {activeIndex === PAGES.length - 1 && (
-          <LinearGradient
-            colors={Colors.gradientPrimary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.getStartedGradient}
+        {/* Next / Get Started button */}
+        <LinearGradient
+          colors={isLast ? colors.gradientPrimary : colors.gradientPrimary}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.nextGradient}
+        >
+          <TouchableOpacity
+            style={styles.nextButton}
+            onPress={handleNext}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={isLast ? 'Get Started' : 'Next'}
           >
-            <TouchableOpacity
-              style={styles.getStartedButton}
-              onPress={handleFinish}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.getStartedText}>Get Started</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        )}
+            <Text style={[styles.nextText, { color: colors.white }]}>
+              {isLast ? 'Get Started' : 'Next'}
+            </Text>
+            {!isLast && (
+              <Ionicons name="arrow-forward" size={18} color={colors.white} style={{ marginLeft: 6 }} />
+            )}
+          </TouchableOpacity>
+        </LinearGradient>
       </View>
     </View>
   );
@@ -148,7 +200,6 @@ export default function Onboarding() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.surface,
   },
   skipButton: {
     position: 'absolute',
@@ -160,8 +211,18 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: 16,
-    color: Colors.textSecondary,
     fontWeight: '500',
+  },
+  pageCounter: {
+    position: 'absolute',
+    top: 60,
+    left: 24,
+    zIndex: 10,
+  },
+  pageCounterText: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   flatList: {
     flex: 1,
@@ -171,64 +232,57 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 36,
     paddingTop: 80,
   },
   iconCircle: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 48,
+    marginBottom: 40,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
-    color: Colors.textPrimary,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
+    letterSpacing: 0.2,
   },
   description: {
     fontSize: 16,
-    color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 25,
   },
   bottomSection: {
-    paddingBottom: 48,
+    paddingBottom: 52,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    gap: 24,
+    gap: 20,
   },
   dotsContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
+    alignItems: 'center',
   },
   dot: {
-    height: 10,
-    borderRadius: 5,
+    height: 8,
+    borderRadius: 4,
   },
-  dotActive: {
-    width: 28,
-    backgroundColor: Colors.primary,
-  },
-  dotInactive: {
-    width: 10,
-    backgroundColor: Colors.gray300,
-  },
-  getStartedGradient: {
+  nextGradient: {
     borderRadius: 14,
     width: width - 48,
   },
-  getStartedButton: {
-    paddingVertical: 18,
+  nextButton: {
+    paddingVertical: 17,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
   },
-  getStartedText: {
-    fontSize: 18,
+  nextText: {
+    fontSize: 17,
     fontWeight: '700',
-    color: Colors.white,
     letterSpacing: 0.3,
   },
 });

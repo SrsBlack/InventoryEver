@@ -7,7 +7,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 import { debounce } from '../../lib/utils';
 import { Config } from '../../constants/config';
 
@@ -24,12 +24,13 @@ export function SearchBar({
   onFilterPress,
   hasActiveFilters = false,
 }: SearchBarProps) {
+  const colors = useColors();
   const [value, setValue] = useState('');
   const [focused, setFocused] = useState(false);
   const borderAnim = useRef(new Animated.Value(0)).current;
 
   const debouncedSearch = useRef(
-    debounce((q: string) => onSearch(q), Config.searchDebounceMs)
+    debounce(onSearch, Config.searchDebounceMs)
   ).current;
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export function SearchBar({
 
   const borderColor = borderAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [Colors.border, Colors.primary],
+    outputRange: [colors.border, colors.primary],
   });
 
   const handleChange = (text: string) => {
@@ -57,36 +58,59 @@ export function SearchBar({
 
   return (
     <View style={styles.wrapper}>
-      <Animated.View style={[styles.container, { borderColor }]}>
-        <Ionicons name="search" size={18} color={Colors.gray400} style={styles.searchIcon} />
+      <Animated.View
+        style={[
+          styles.container,
+          { borderColor, backgroundColor: colors.surface },
+        ]}
+      >
+        <Ionicons name="search" size={18} color={colors.gray400} style={styles.searchIcon} />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: colors.textPrimary }]}
           value={value}
           onChangeText={handleChange}
           placeholder={placeholder}
-          placeholderTextColor={Colors.gray400}
+          placeholderTextColor={colors.gray400}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           returnKeyType="search"
           clearButtonMode="never"
+          accessibilityLabel="Search inventory"
+          accessibilityRole="search"
         />
         {value.length > 0 && (
-          <TouchableOpacity onPress={handleClear} style={styles.clearBtn}>
-            <Ionicons name="close-circle" size={18} color={Colors.gray400} />
+          <TouchableOpacity
+            onPress={handleClear}
+            style={styles.clearBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+          >
+            <Ionicons name="close-circle" size={18} color={colors.gray400} />
           </TouchableOpacity>
         )}
       </Animated.View>
       {onFilterPress && (
         <TouchableOpacity
           onPress={onFilterPress}
-          style={[styles.filterBtn, hasActiveFilters && styles.filterBtnActive]}
+          style={[
+            styles.filterBtn,
+            {
+              backgroundColor: hasActiveFilters ? colors.primary + '11' : colors.surface,
+              borderColor: hasActiveFilters ? colors.primary : colors.border,
+            },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={hasActiveFilters ? 'Filters (active)' : 'Filters'}
+          accessibilityHint="Open filter options"
         >
           <Ionicons
             name="options"
             size={18}
-            color={hasActiveFilters ? Colors.primary : Colors.textSecondary}
+            color={hasActiveFilters ? colors.primary : colors.textSecondary}
           />
-          {hasActiveFilters && <View style={styles.filterDot} />}
+          {hasActiveFilters && (
+            <View style={[styles.filterDot, { backgroundColor: colors.error }]} />
+          )}
         </TouchableOpacity>
       )}
     </View>
@@ -104,7 +128,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
     borderRadius: 14,
     borderWidth: 1.5,
     paddingHorizontal: 14,
@@ -121,7 +144,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: Colors.textPrimary,
     paddingVertical: 0,
   },
   clearBtn: {
@@ -131,17 +153,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
     borderWidth: 1.5,
-    borderColor: Colors.border,
     position: 'relative',
-  },
-  filterBtnActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '11',
   },
   filterDot: {
     position: 'absolute',
@@ -150,6 +166,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.error,
   },
 });

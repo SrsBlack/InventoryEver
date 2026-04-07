@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 interface BulkActionBarProps {
   selectedCount: number;
@@ -23,6 +23,7 @@ export function BulkActionBar({
   onExport,
   onClearSelection,
 }: BulkActionBarProps) {
+  const colors = useColors();
   const translateY = useRef(new Animated.Value(80)).current;
 
   useEffect(() => {
@@ -46,22 +47,30 @@ export function BulkActionBar({
   };
 
   return (
-    <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
+    <Animated.View
+      style={[
+        styles.container,
+        { backgroundColor: colors.gray800, transform: [{ translateY }] },
+      ]}
+    >
       <View style={styles.inner}>
         <View style={styles.leftSection}>
-          <Text style={styles.countText}>
+          <Text style={[styles.countText, { color: colors.white }]}>
             {selectedCount} selected
           </Text>
-          <TouchableOpacity onPress={onClearSelection} style={styles.clearButton}>
-            <Text style={styles.clearText}>Clear</Text>
+          <TouchableOpacity
+            onPress={onClearSelection}
+            style={[styles.clearButton, { borderColor: colors.gray600 }]}
+          >
+            <Text style={[styles.clearText, { color: colors.gray300 }]}>Clear</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
-            <Ionicons name="trash" size={22} color={Colors.error} />
+            <Ionicons name="trash" size={22} color={colors.error} />
           </TouchableOpacity>
           <TouchableOpacity onPress={onExport} style={styles.actionButton}>
-            <Ionicons name="download-outline" size={22} color={Colors.white} />
+            <Ionicons name="download-outline" size={22} color={colors.white} />
           </TouchableOpacity>
         </View>
       </View>
@@ -76,7 +85,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 60,
-    backgroundColor: Colors.gray800,
   },
   inner: {
     flex: 1,
@@ -93,19 +101,16 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.white,
   },
   clearButton: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.gray600,
   },
   clearText: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.gray300,
   },
   actions: {
     flexDirection: 'row',

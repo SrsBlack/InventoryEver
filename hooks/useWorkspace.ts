@@ -17,15 +17,37 @@ export function useWorkspace(userId: string | undefined) {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from('workspaces')
-        .select('*, workspace_members(role, user_id)')
-        .or(`owner_id.eq.${userId},workspace_members.user_id.eq.${userId}`)
-        .order('created_at', { ascending: true });
+      // Two separate queries to avoid invalid PostgREST cross-table OR filter
+      const [ownedResult, memberResult] = await Promise.all([
+        supabase
+          .from('workspaces')
+          .select('*, workspace_members(role, user_id)')
+          .eq('owner_id', userId)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('workspace_members')
+          .select('workspace_id')
+          .eq('user_id', userId),
+      ]);
 
-      if (fetchError) throw fetchError;
+      if (ownedResult.error) throw ownedResult.error;
 
-      const ws = (data ?? []) as Workspace[];
+      const memberWorkspaceIds = (memberResult.data ?? [])
+        .map((m: { workspace_id: string }) => m.workspace_id)
+        .filter((id: string) => !(ownedResult.data ?? []).some((w: Workspace) => w.id === id));
+
+      let memberWorkspaces: Workspace[] = [];
+      if (memberWorkspaceIds.length > 0) {
+        const { data: mwData, error: mwError } = await supabase
+          .from('workspaces')
+          .select('*, workspace_members(role, user_id)')
+          .in('id', memberWorkspaceIds)
+          .order('created_at', { ascending: true });
+        if (mwError) throw mwError;
+        memberWorkspaces = (mwData ?? []) as Workspace[];
+      }
+
+      const ws = [...(ownedResult.data ?? []) as Workspace[], ...memberWorkspaces];
       setWorkspaces(ws);
 
       // Restore active workspace from storage

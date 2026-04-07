@@ -14,9 +14,10 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 export default function SignIn() {
+  const colors = useColors();
   const { signIn, loading, error, clearError } = useAuthContext();
   const router = useRouter();
 
@@ -44,7 +45,7 @@ export default function SignIn() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={[styles.flex, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -55,22 +56,22 @@ export default function SignIn() {
       >
         {/* Logo Area */}
         <View style={styles.logoArea}>
-          <View style={styles.logoIcon}>
-            <Ionicons name="cube" size={32} color={Colors.primary} />
+          <View style={[styles.logoIcon, { borderColor: colors.primary }]}>
+            <Ionicons name="cube" size={32} color={colors.primary} />
           </View>
-          <Text style={styles.appName}>INVENTORYEVER</Text>
-          <Text style={styles.tagline}>Enterprise asset management</Text>
+          <Text style={[styles.appName, { color: colors.textPrimary }]}>INVENTORYEVER</Text>
+          <Text style={[styles.tagline, { color: colors.textTertiary }]}>Enterprise asset management</Text>
         </View>
 
         {/* Form */}
         <View style={styles.formArea}>
-          <Text style={styles.title}>SIGN IN</Text>
-          <Text style={styles.subtitle}>Access your account</Text>
+          <Text style={[styles.title, { color: colors.textSecondary }]}>SIGN IN</Text>
+          <Text style={[styles.subtitle, { color: colors.textTertiary }]}>Access your account</Text>
 
           {error && (
-            <View style={styles.errorBanner}>
-              <Ionicons name="alert-circle" size={16} color={Colors.error} />
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={[styles.errorBanner, { backgroundColor: colors.errorLight, borderLeftColor: colors.error }]}>
+              <Ionicons name="alert-circle" size={16} color={colors.error} />
+              <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
             </View>
           )}
 
@@ -107,43 +108,33 @@ export default function SignIn() {
             size="lg"
           />
 
-          <TouchableOpacity style={styles.forgotBtn}>
-            <Text style={styles.forgotText}>Forgot password?</Text>
+          <TouchableOpacity style={styles.forgotBtn} onPress={() => router.push('/(auth)/forgot-password')}>
+            <Text style={[styles.forgotText, { color: colors.primary }]}>Forgot password?</Text>
           </TouchableOpacity>
 
           <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.textTertiary }]}>OR</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           <TouchableOpacity
             style={styles.signUpBtn}
             onPress={() => router.push('/(auth)/sign-up')}
           >
-            <Text style={styles.signUpText}>
-              Don't have an account? <Text style={styles.signUpLink}>Create one</Text>
+            <Text style={[styles.signUpText, { color: colors.textSecondary }]}>
+              Don't have an account? <Text style={[styles.signUpLink, { color: colors.primary }]}>Create one</Text>
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.guestBtn}
+            style={[styles.guestBtn, { borderColor: colors.border }]}
             onPress={() => router.replace('/(tabs)')}
           >
-            <Ionicons name="eye-outline" size={16} color={Colors.textTertiary} style={{ marginRight: 6 }} />
-            <Text style={styles.guestText}>Continue as Guest (preview only)</Text>
+            <Ionicons name="eye-outline" size={16} color={colors.textTertiary} style={{ marginRight: 6 }} />
+            <Text style={[styles.guestText, { color: colors.textTertiary }]}>Continue as Guest (preview only)</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.devBtn}
-            onPress={() => {
-              setEmail('demo@inventoryever.com');
-              setPassword('demo1234');
-            }}
-          >
-            <Ionicons name="code-slash-outline" size={14} color={Colors.primary} style={{ marginRight: 4 }} />
-            <Text style={styles.devText}>Fill demo credentials</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -151,7 +142,7 @@ export default function SignIn() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: Colors.background },
+  flex: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
@@ -167,7 +158,6 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -175,13 +165,11 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 24,
     fontWeight: '800',
-    color: Colors.textPrimary,
     letterSpacing: 3,
     marginBottom: 6,
   },
   tagline: {
     fontSize: 13,
-    color: Colors.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
@@ -193,17 +181,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.textSecondary,
     letterSpacing: 2,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: Colors.textTertiary,
     marginBottom: 24,
   },
   errorBanner: {
-    backgroundColor: Colors.errorLight,
     padding: 12,
     borderRadius: 4,
     marginBottom: 16,
@@ -211,32 +196,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.error,
   },
   errorText: {
-    color: Colors.error,
     fontSize: 13,
     fontWeight: '500',
     flex: 1,
   },
   forgotBtn: { alignItems: 'flex-end', marginTop: 8, marginBottom: 24 },
-  forgotText: { fontSize: 13, color: Colors.primary, fontWeight: '500' },
+  forgotText: { fontSize: 13, fontWeight: '500' },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 20,
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  dividerLine: { flex: 1, height: 1 },
   dividerText: {
     marginHorizontal: 12,
     fontSize: 11,
-    color: Colors.textTertiary,
     letterSpacing: 1,
     fontWeight: '600',
   },
   signUpBtn: { alignItems: 'center' },
-  signUpText: { fontSize: 14, color: Colors.textSecondary },
-  signUpLink: { color: Colors.primary, fontWeight: '700' },
+  signUpText: { fontSize: 14 },
+  signUpLink: { fontWeight: '700' },
   guestBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -244,16 +226,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: 4,
   },
-  guestText: { fontSize: 13, color: Colors.textTertiary },
-  devBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    paddingVertical: 8,
-  },
-  devText: { fontSize: 13, color: Colors.primary },
+  guestText: { fontSize: 13 },
 });

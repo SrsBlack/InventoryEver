@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { analytics } from '../lib/analytics';
+import { getCachedItems, setCachedItems, upsertCachedItem, removeCachedItem, enqueue } from '../lib/offline';
 import type { Item, ItemFilters, WarrantyStatus } from '../types';
 import { Config } from '../constants/config';
 
@@ -50,6 +51,7 @@ export function useItems(workspaceId: string | undefined, filters?: ItemFilters)
       .select(`
         *,
         category:categories(id, name, icon_emoji, color_hex),
+        location_data:locations(id, name, full_path, icon_emoji, color_hex),
         images:item_images(id, image_url, image_type, sort_order),
         item_tags(tag_id)
       `)
@@ -61,7 +63,9 @@ export function useItems(workspaceId: string | undefined, filters?: ItemFilters)
     if (filters?.category_id) {
       query = query.eq('category_id', filters.category_id);
     }
-    if (filters?.location) {
+    if (filters?.location_id) {
+      query = query.eq('location_id', filters.location_id);
+    } else if (filters?.location) {
       query = query.ilike('location', `%${filters.location}%`);
     }
     if (filters?.condition) {
@@ -110,16 +114,31 @@ export function useItems(workspaceId: string | undefined, filters?: ItemFilters)
       const newItems = applyClientFilters((data ?? []) as Item[], filters);
       if (resetPage) {
         setItems(newItems);
+        // Update cache with fresh server data (first page only)
+        if (currentPage === 0) await setCachedItems(workspaceId, newItems);
       } else {
         setItems(prev => [...prev, ...newItems]);
       }
       setHasMore((data ?? []).length === Config.itemsPerPage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load items');
+      // Network error — fall back to cached items
+      if (resetPage) {
+        const cached = await getCachedItems(workspaceId);
+        const filtered = applyClientFilters(cached, filters);
+        setItems(filtered);
+        setHasMore(false);
+        if (cached.length > 0) {
+          setError(null); // suppress error when cache provides data
+        } else {
+          setError('Offline — no cached data available');
+        }
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to load items');
+      }
     } finally {
       setLoading(false);
     }
-  }, [workspaceId, buildQuery, page]);
+  }, [workspaceId, buildQuery, page, filters]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading) return;
@@ -156,13 +175,27 @@ export function useItems(workspaceId: string | undefined, filters?: ItemFilters)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'items', filter: `workspace_id=eq.${workspaceId}` },
-        payload => {
-          if (payload.eventType === 'INSERT') {
-            setItems(prev => [payload.new as Item, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setItems(prev =>
-              prev.map(item => (item.id === (payload.new as Item).id ? (payload.new as Item) : item))
-            );
+        async payload => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const id = (payload.new as Item).id;
+            const { data } = await supabase
+              .from('items')
+              .select(`
+                *,
+                category:categories(id, name, icon_emoji, color_hex),
+                location_data:locations(id, name, full_path, icon_emoji, color_hex),
+                images:item_images(id, image_url, image_type, sort_order),
+                item_tags(tag_id)
+              `)
+              .eq('id', id)
+              .single();
+            if (data) {
+              setItems(prev => {
+                const exists = prev.find(i => i.id === id);
+                if (exists) return prev.map(i => (i.id === id ? (data as Item) : i));
+                return [data as Item, ...prev];
+              });
+            }
           } else if (payload.eventType === 'DELETE') {
             setItems(prev => prev.filter(item => item.id !== (payload.old as Item).id));
           }
@@ -174,38 +207,86 @@ export function useItems(workspaceId: string | undefined, filters?: ItemFilters)
   }, [workspaceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addItem = useCallback(async (itemData: Partial<Item>): Promise<Item> => {
-    const { data, error: insertError } = await supabase
-      .from('items')
-      .insert([{ ...itemData, workspace_id: workspaceId }])
-      .select()
-      .single();
+    try {
+      const { data, error: insertError } = await supabase
+        .from('items')
+        .insert([{ ...itemData, workspace_id: workspaceId }])
+        .select()
+        .single();
 
-    if (insertError) throw insertError;
-    analytics.track('item_added', {
-      category: itemData.category_id,
-      has_price: !!itemData.purchase_price,
-    });
-    return data as Item;
+      if (insertError) throw insertError;
+      const newItem = data as Item;
+      if (workspaceId) await upsertCachedItem(workspaceId, newItem);
+      analytics.track('item_added', { category: itemData.category_id, has_price: !!itemData.purchase_price });
+      return newItem;
+    } catch {
+      // Offline — create optimistic item with temp id and queue
+      const tempItem: Item = {
+        ...itemData,
+        id: `tmp_${Date.now()}`,
+        workspace_id: workspaceId ?? '',
+        quantity: itemData.quantity ?? 1,
+        unit: itemData.unit ?? 'unit',
+        currency: itemData.currency ?? 'USD',
+        condition: itemData.condition ?? 'good',
+        created_by: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as Item;
+
+      setItems(prev => [tempItem, ...prev]);
+      if (workspaceId) {
+        await upsertCachedItem(workspaceId, tempItem);
+        await enqueue({ type: 'INSERT', table: 'items', workspaceId, payload: tempItem as unknown as Record<string, unknown> });
+      }
+      analytics.track('item_added_offline', { category: itemData.category_id });
+      return tempItem;
+    }
   }, [workspaceId]);
 
   const updateItem = useCallback(async (id: string, updates: Partial<Item>): Promise<Item> => {
-    const { data, error: updateError } = await supabase
-      .from('items')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
+    try {
+      const { data, error: updateError } = await supabase
+        .from('items')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (updateError) throw updateError;
-    analytics.track('item_updated', { item_id: id });
-    return data as Item;
-  }, []);
+      if (updateError) throw updateError;
+      const updated = data as Item;
+      if (workspaceId) await upsertCachedItem(workspaceId, updated);
+      analytics.track('item_updated', { item_id: id });
+      return updated;
+    } catch {
+      // Offline — apply optimistically and queue
+      const optimistic = { ...updates, id, updated_at: new Date().toISOString() } as Item;
+      setItems(prev => prev.map(item => (item.id === id ? { ...item, ...optimistic } : item)));
+      if (workspaceId) {
+        await upsertCachedItem(workspaceId, optimistic);
+        await enqueue({ type: 'UPDATE', table: 'items', workspaceId, payload: { id, ...updates } as Record<string, unknown> });
+      }
+      analytics.track('item_updated_offline', { item_id: id });
+      return optimistic;
+    }
+  }, [workspaceId]);
 
   const deleteItem = useCallback(async (id: string): Promise<void> => {
-    const { error: deleteError } = await supabase.from('items').delete().eq('id', id);
-    if (deleteError) throw deleteError;
-    analytics.track('item_deleted', { item_id: id });
-  }, []);
+    try {
+      const { error: deleteError } = await supabase.from('items').delete().eq('id', id);
+      if (deleteError) throw deleteError;
+      if (workspaceId) await removeCachedItem(workspaceId, id);
+      analytics.track('item_deleted', { item_id: id });
+    } catch {
+      // Offline — remove optimistically and queue
+      setItems(prev => prev.filter(item => item.id !== id));
+      if (workspaceId) {
+        await removeCachedItem(workspaceId, id);
+        await enqueue({ type: 'DELETE', table: 'items', workspaceId, payload: { id } });
+      }
+      analytics.track('item_deleted_offline', { item_id: id });
+    }
+  }, [workspaceId]);
 
   return {
     items,

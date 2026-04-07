@@ -85,6 +85,10 @@ export function useAuth() {
         });
         analytics.track('user_signed_up', { email });
       }
+      // If email confirmation is required, session is null — clear loading state
+      if (!data.session) {
+        setState(s => ({ ...s, loading: false }));
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sign up failed';
       setState(s => ({ ...s, loading: false, error: msg }));
@@ -128,6 +132,20 @@ export function useAuth() {
     setState(s => ({ ...s, error: null }));
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    setState(s => ({ ...s, loading: true, error: null }));
+    try {
+      const { error } = await supabase.rpc('delete_account');
+      if (error) throw error;
+      // signOut clears local state after the RPC deletes the user server-side
+      await supabase.auth.signOut();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Account deletion failed';
+      setState(s => ({ ...s, loading: false, error: msg }));
+      throw err;
+    }
+  }, []);
+
   return {
     user: state.user,
     profile: state.profile,
@@ -140,5 +158,6 @@ export function useAuth() {
     signOut,
     refreshProfile,
     clearError,
+    deleteAccount,
   };
 }

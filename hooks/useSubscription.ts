@@ -79,46 +79,21 @@ export function useSubscription(userId: string | undefined) {
   );
 
   /**
-   * Mock purchase flow — replace with react-native-purchases RevenueCat SDK.
+   * Purchase Pro — requires RevenueCat SDK integration.
+   * TODO: Install react-native-purchases, configure with Config.revenueCatApiKey,
+   * then replace this body with:
+   *   const { customerInfo } = await Purchases.purchaseProduct(Config.revenueCatProMonthly);
+   *   if (customerInfo.entitlements.active[Config.entitlementPro]) { ... }
    */
   const purchasePro = useCallback(async (): Promise<boolean> => {
-    try {
-      // TODO: Implement RevenueCat
-      // const { customerInfo } = await Purchases.purchaseProduct(Config.revenueCatProMonthly);
-      // const isActive = customerInfo.entitlements.active[Config.entitlementPro];
-
-      // For now, update directly (remove in production):
-      if (!userId) return false;
-      await supabase
-        .from('profiles')
-        .update({ subscription_tier: 'pro', subscription_status: 'active' })
-        .eq('id', userId);
-
-      setTier('pro');
-      analytics.track('subscription_upgraded', { tier: 'pro' });
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Purchase failed');
-      return false;
-    }
-  }, [userId]);
+    setError('In-app purchases are not yet available. Please check back soon.');
+    return false;
+  }, []);
 
   const purchaseBusiness = useCallback(async (): Promise<boolean> => {
-    try {
-      if (!userId) return false;
-      await supabase
-        .from('profiles')
-        .update({ subscription_tier: 'business', subscription_status: 'active' })
-        .eq('id', userId);
-
-      setTier('business');
-      analytics.track('subscription_upgraded', { tier: 'business' });
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Purchase failed');
-      return false;
-    }
-  }, [userId]);
+    setError('In-app purchases are not yet available. Please check back soon.');
+    return false;
+  }, []);
 
   const restorePurchases = useCallback(async (): Promise<boolean> => {
     // TODO: Purchases.restorePurchases()

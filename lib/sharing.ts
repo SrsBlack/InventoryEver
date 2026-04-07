@@ -30,7 +30,14 @@ export async function shareItemAsFile(item: Item, format: 'json' | 'csv' = 'json
     await FileSystem.writeAsStringAsync(path, JSON.stringify(item, null, 2));
   } else {
     const headers = ['name', 'brand', 'model', 'condition', 'purchase_price', 'location', 'serial_number'];
-    const values = headers.map(h => item[h] ?? '');
+    const escapeCSV = (val: unknown): string => {
+      const str = String(val ?? '');
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+    const values = headers.map(h => escapeCSV((item as Record<string, unknown>)[h]));
     await FileSystem.writeAsStringAsync(path, headers.join(',') + '\n' + values.join(','));
   }
 

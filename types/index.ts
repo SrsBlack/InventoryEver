@@ -57,6 +57,38 @@ export interface Category {
 }
 
 // ============================================
+// Location Types
+// ============================================
+export type LocationDepth = 0 | 1 | 2; // 0 = Room, 1 = Area, 2 = Spot
+
+export const LOCATION_DEPTH_LABELS: Record<LocationDepth, string> = {
+  0: 'Room',
+  1: 'Area',
+  2: 'Spot',
+};
+
+export interface Location {
+  id: string;
+  workspace_id: string;
+  parent_id?: string;
+  name: string;
+  full_path?: string;
+  icon_emoji: string;
+  color_hex: string;
+  description?: string;
+  qr_code_token: string;
+  sort_order: number;
+  depth: LocationDepth;
+  item_count: number;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined / computed
+  parent?: Pick<Location, 'id' | 'name' | 'full_path'>;
+  children?: Location[];
+}
+
+// ============================================
 // Item Types
 // ============================================
 export type ItemCondition = 'new' | 'excellent' | 'good' | 'fair' | 'poor' | 'damaged';
@@ -75,6 +107,7 @@ export interface Item {
   currency: string;
   location?: string;
   location_details?: string;
+  location_id?: string;
   condition: ItemCondition;
   brand?: string;
   model?: string;
@@ -92,6 +125,7 @@ export interface Item {
   updated_at: string;
   // Joined fields
   category?: Category;
+  location_data?: Pick<Location, 'id' | 'name' | 'full_path' | 'icon_emoji' | 'color_hex'>;
   images?: ItemImage[];
   tags?: Tag[];
 }
@@ -241,6 +275,7 @@ export interface AddItemFormData {
   purchase_date: string;
   location: string;
   location_details: string;
+  location_id: string;
   category_id: string;
   brand: string;
   model: string;
@@ -254,6 +289,90 @@ export interface AddItemFormData {
 }
 
 // ============================================
+// Collections & Smart Lists Types
+// ============================================
+
+export type CollectionType = 'manual' | 'smart';
+
+export interface SmartRules {
+  search?: string;
+  category_id?: string;
+  location_id?: string;
+  condition?: string;
+  tag_ids?: string[];
+  min_price?: number;
+  max_price?: number;
+  purchase_date_from?: string;
+  purchase_date_to?: string;
+  warranty_status?: string[];
+}
+
+export interface Collection {
+  id: string;
+  workspace_id: string;
+  name: string;
+  description?: string;
+  icon_emoji: string;
+  color_hex: string;
+  collection_type: CollectionType;
+  smart_rules?: SmartRules;
+  item_count: number;
+  sort_order: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CollectionItem {
+  collection_id: string;
+  item_id: string;
+  sort_order: number;
+  added_at: string;
+  item?: Item;
+}
+
+// ============================================
+// Lending Types
+// ============================================
+export interface BorrowerProfile {
+  id: string;
+  workspace_id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  notes?: string;
+  total_borrowed: number;
+  total_returned: number;
+  overdue_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LendingRecord {
+  id: string;
+  workspace_id: string;
+  item_id: string;
+  borrower_id?: string;
+  borrower_name: string;
+  borrower_phone?: string;
+  borrower_email?: string;
+  quantity_lent: number;
+  lent_at: string;
+  expected_return_date?: string;
+  returned_at?: string;
+  condition_lent?: string;
+  condition_returned?: string;
+  notes?: string;
+  reminder_sent_at?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  item?: Pick<Item, 'id' | 'name' | 'main_image_url' | 'condition'>;
+  borrower?: BorrowerProfile;
+}
+
+// ============================================
 // Search/Filter Types
 // ============================================
 export type WarrantyStatus = 'valid' | 'expiring' | 'expired' | 'none';
@@ -262,6 +381,7 @@ export interface ItemFilters {
   search?: string;
   category_id?: string;
   location?: string;
+  location_id?: string;
   condition?: ItemCondition;
   tag_ids?: string[];
   min_price?: number;

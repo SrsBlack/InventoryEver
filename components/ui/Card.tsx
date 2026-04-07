@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { View, ViewStyle, TouchableOpacity } from 'react-native';
+import { useColors } from '../../hooks/useColors';
 
 interface CardProps {
   children: React.ReactNode;
@@ -11,37 +11,39 @@ interface CardProps {
 }
 
 export function Card({ children, style, onPress, variant = 'default', padding = 16 }: CardProps) {
+  const colors = useColors();
+
   const variantStyles: Record<string, ViewStyle> = {
     default: {
-      backgroundColor: Colors.surface,
+      backgroundColor: colors.surface,
       borderRadius: 8,
       borderWidth: 1,
-      borderColor: Colors.border,
+      borderColor: colors.border,
     },
     elevated: {
-      backgroundColor: Colors.surface,
+      backgroundColor: colors.surface,
       borderRadius: 8,
       borderWidth: 1,
-      borderColor: Colors.borderFocus + '40',
-      shadowColor: Colors.primary,
+      borderColor: colors.borderFocus + '40',
+      shadowColor: colors.primary,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.15,
       shadowRadius: 8,
       elevation: 4,
     },
     flat: {
-      backgroundColor: Colors.gray200,
+      backgroundColor: colors.gray100,
       borderRadius: 8,
     },
     bordered: {
-      backgroundColor: Colors.surface,
+      backgroundColor: colors.surface,
       borderRadius: 8,
       borderWidth: 1,
-      borderColor: Colors.border,
+      borderColor: colors.border,
     },
   };
 
-  const containerStyle = [styles.base, variantStyles[variant], { padding }, style];
+  const containerStyle = [{ overflow: 'hidden' as const }, variantStyles[variant], { padding }, style];
 
   if (onPress) {
     return (
@@ -53,9 +55,3 @@ export function Card({ children, style, onPress, variant = 'default', padding = 
 
   return <View style={containerStyle}>{children}</View>;
 }
-
-const styles = StyleSheet.create({
-  base: {
-    overflow: 'hidden',
-  },
-});

@@ -6,7 +6,7 @@
     "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -16,7 +16,7 @@
       "**/*"
     ],
     "ios": {
-      "supportsTabletMode": true,
+      "supportsTablet": true,
       "bundleIdentifier": "com.inventoryever.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow InventoryEver to access your camera to scan items and receipts.",
@@ -44,6 +44,15 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#3B82F6",
+          "sounds": [],
+          "mode": "production"
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "Allow InventoryEver to access your camera to scan items and receipts."
@@ -59,7 +68,7 @@
     "scheme": "inventory-ever",
     "extra": {
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
+        "projectId": "REPLACE_WITH_YOUR_EAS_PROJECT_ID"
       }
     }
   }

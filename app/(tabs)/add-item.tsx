@@ -13,12 +13,15 @@ import { useSubscriptionContext } from '../../contexts/SubscriptionContext';
 import { useItems } from '../../hooks/useItems';
 import { useTags } from '../../hooks/useTags';
 import { AddItemForm } from '../../components/inventory/AddItemForm';
-import { Spinner } from '../../components/ui/Spinner';
-import { Colors } from '../../constants/colors';
+import { SkeletonFullScreen } from '../../components/ui/Skeleton';
+import { useColors } from '../../hooks/useColors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import type { AddItemFormData, Category } from '../../types';
 
 export default function AddItemScreen() {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthContext();
   const { activeWorkspace } = useWorkspaceContext();
@@ -92,13 +95,12 @@ export default function AddItemScreen() {
     }
   };
 
-  if (!categoriesLoaded) return <Spinner fullScreen label="Loading..." />;
-  if (saving) return <Spinner fullScreen label="Saving item..." />;
+  if (!categoriesLoaded || saving) return <SkeletonFullScreen />;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Add Item</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.divider, paddingTop: insets.top + 8 }]}>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Add Item</Text>
       </View>
       <AddItemForm
         workspaceId={activeWorkspace?.id ?? ''}
@@ -112,14 +114,12 @@ export default function AddItemScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   header: {
-    paddingTop: 56,
+    paddingTop: 0,
     paddingBottom: 12,
     paddingHorizontal: 20,
-    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
   },
-  headerTitle: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary },
+  headerTitle: { fontSize: 28, fontWeight: '800' },
 });

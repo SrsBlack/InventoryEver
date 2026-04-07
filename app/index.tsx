@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthContext } from '../contexts/AuthContext';
-import { Spinner } from '../components/ui/Spinner';
+import { SkeletonFullScreen } from '../components/ui/Skeleton';
 
 export default function Index() {
   const { isAuthenticated, loading } = useAuthContext();
@@ -29,5 +29,5 @@ export default function Index() {
     }
   }, [isAuthenticated, loading, onboardingChecked, hasOnboarded, router]);
 
-  return <Spinner fullScreen label="Loading..." />;
+  return <SkeletonFullScreen />;
 }

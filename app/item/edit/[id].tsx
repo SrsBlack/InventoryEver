@@ -18,11 +18,14 @@ import { uploadItemImage } from '../../../lib/storage';
 import { useWorkspaceContext } from '../../../contexts/WorkspaceContext';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useItems } from '../../../hooks/useItems';
+import { useTags } from '../../../hooks/useTags';
 import { Input } from '../../../components/ui/Input';
+import { DatePickerField } from '../../../components/ui/DatePickerField';
 import { Button } from '../../../components/ui/Button';
-import { Spinner } from '../../../components/ui/Spinner';
-import { Colors } from '../../../constants/colors';
-import type { Item, Category, ItemCondition } from '../../../types';
+import { SkeletonDetail } from '../../../components/ui/Skeleton';
+import { useColors } from '../../../hooks/useColors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { Item, Category, ItemCondition, Tag } from '../../../types';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -110,10 +113,15 @@ export default function EditItemScreen() {
   const { activeWorkspace } = useWorkspaceContext();
   const { user } = useAuthContext();
   const { updateItem } = useItems(activeWorkspace?.id);
+  const { tags: workspaceTags, getItemTags, setItemTags } = useTags(activeWorkspace?.id ?? null);
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
 
   const [item, setItem] = useState<Item | null>(null);
   const [formData, setFormData] = useState<EditFormData | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [showTagPicker, setShowTagPicker] = useState(false);
   const [loadingItem, setLoadingItem] = useState(true);
   const [saving, setSaving] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
@@ -135,6 +143,8 @@ export default function EditItemScreen() {
         const fetched = data as Item;
         setItem(fetched);
         setFormData(itemToFormData(fetched));
+        const existingTags = await getItemTags(id);
+        setSelectedTagIds(existingTags.map(t => t.id));
       } else {
         Alert.alert('Error', 'Could not load item.');
         router.back();
@@ -219,6 +229,7 @@ export default function EditItemScreen() {
       };
 
       await updateItem(item.id, updates);
+      await setItemTags(item.id, selectedTagIds);
       Alert.alert('Saved', 'Item updated successfully.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -230,19 +241,19 @@ export default function EditItemScreen() {
   };
 
   if (loadingItem || !formData) {
-    return <Spinner fullScreen label="Loading item..." />;
+    return <SkeletonDetail />;
   }
 
   const hasImage = !!formData.main_image_url;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={Colors.textPrimary} />
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.gray100 }]} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Item</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Edit Item</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -256,48 +267,48 @@ export default function EditItemScreen() {
         <View style={styles.imageSection}>
           {hasImage ? (
             <View style={styles.imageWrapper}>
-              <Image source={{ uri: formData.main_image_url }} style={styles.image} />
+              <Image source={{ uri: formData.main_image_url }} style={[styles.image, { backgroundColor: colors.gray100 }]} />
               {imageUploading && (
                 <View style={styles.imageOverlay}>
-                  <ActivityIndicator color={Colors.white} size="large" />
-                  <Text style={styles.imageOverlayText}>Uploading...</Text>
+                  <ActivityIndicator color={colors.white} size="large" />
+                  <Text style={[styles.imageOverlayText, { color: colors.white }]}>Uploading...</Text>
                 </View>
               )}
             </View>
           ) : (
-            <LinearGradient colors={Colors.gradientDark} style={styles.imagePlaceholder}>
+            <LinearGradient colors={colors.gradientDark} style={styles.imagePlaceholder}>
               {imageUploading ? (
                 <>
-                  <ActivityIndicator color={Colors.white} size="large" />
-                  <Text style={styles.imageOverlayText}>Uploading...</Text>
+                  <ActivityIndicator color={colors.white} size="large" />
+                  <Text style={[styles.imageOverlayText, { color: colors.white }]}>Uploading...</Text>
                 </>
               ) : (
-                <Ionicons name="cube" size={60} color={Colors.white} />
+                <Ionicons name="cube" size={60} color={colors.white} />
               )}
             </LinearGradient>
           )}
           <View style={styles.photoRow}>
             <TouchableOpacity
-              style={styles.photoBtn}
+              style={[styles.photoBtn, { backgroundColor: colors.gray50, borderColor: colors.border }]}
               onPress={() => pickImage(true)}
               disabled={imageUploading}
             >
-              <Ionicons name="camera" size={20} color={Colors.textSecondary} />
-              <Text style={styles.photoBtnText}>Camera</Text>
+              <Ionicons name="camera" size={20} color={colors.textSecondary} />
+              <Text style={[styles.photoBtnText, { color: colors.textSecondary }]}>Camera</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.photoBtn}
+              style={[styles.photoBtn, { backgroundColor: colors.gray50, borderColor: colors.border }]}
               onPress={() => pickImage(false)}
               disabled={imageUploading}
             >
-              <Ionicons name="images" size={20} color={Colors.textSecondary} />
-              <Text style={styles.photoBtnText}>Gallery</Text>
+              <Ionicons name="images" size={20} color={colors.textSecondary} />
+              <Text style={[styles.photoBtnText, { color: colors.textSecondary }]}>Gallery</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Item Details */}
-        <Text style={styles.sectionLabel}>Item Details</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Item Details</Text>
 
         <Input
           label="Name"
@@ -332,26 +343,27 @@ export default function EditItemScreen() {
         />
 
         {/* Category */}
-        <Text style={styles.fieldLabel}>Category</Text>
+        <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>Category</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
           {categories.map(cat => (
             <TouchableOpacity
               key={cat.id}
               style={[
                 styles.categoryChip,
-                formData.category_id === cat.id && styles.categoryChipActive,
-                formData.category_id === cat.id && { borderColor: cat.color_hex },
+                { backgroundColor: colors.gray100 },
+                formData.category_id === cat.id && { backgroundColor: colors.primary + '15', borderColor: cat.color_hex },
               ]}
               onPress={() => update('category_id', cat.id)}
             >
               <Ionicons
                 name={getCategoryIcon(cat.name)}
                 size={16}
-                color={formData.category_id === cat.id ? cat.color_hex : Colors.textSecondary}
+                color={formData.category_id === cat.id ? cat.color_hex : colors.textSecondary}
               />
               <Text
                 style={[
                   styles.categoryChipText,
+                  { color: colors.textSecondary },
                   formData.category_id === cat.id && { color: cat.color_hex },
                 ]}
               >
@@ -362,27 +374,29 @@ export default function EditItemScreen() {
         </ScrollView>
 
         {/* Condition */}
-        <Text style={styles.fieldLabel}>Condition</Text>
+        <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>Condition</Text>
         <View style={styles.conditionRow}>
           {CONDITIONS.map(c => (
             <TouchableOpacity
               key={c.value}
               style={[
                 styles.conditionChip,
-                formData.condition === c.value && styles.conditionChipActive,
+                { backgroundColor: colors.gray100 },
+                formData.condition === c.value && { backgroundColor: colors.primary + '15', borderColor: colors.primary },
               ]}
               onPress={() => update('condition', c.value)}
             >
               <Ionicons
                 name={c.icon}
                 size={20}
-                color={formData.condition === c.value ? Colors.primary : Colors.textSecondary}
+                color={formData.condition === c.value ? colors.primary : colors.textSecondary}
                 style={styles.conditionIcon}
               />
               <Text
                 style={[
                   styles.conditionLabel,
-                  formData.condition === c.value && styles.conditionLabelActive,
+                  { color: colors.textSecondary },
+                  formData.condition === c.value && { color: colors.primary, fontWeight: '700' },
                 ]}
               >
                 {c.label}
@@ -411,7 +425,7 @@ export default function EditItemScreen() {
         </View>
 
         {/* Purchase Details */}
-        <Text style={styles.sectionLabel}>Purchase Details</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Purchase Details</Text>
 
         <View style={styles.row}>
           <Input
@@ -423,17 +437,16 @@ export default function EditItemScreen() {
             icon="cash"
             containerStyle={{ flex: 1, marginRight: 8 }}
           />
-          <Input
+          <DatePickerField
             label="Purchase Date"
-            placeholder="YYYY-MM-DD"
             value={formData.purchase_date}
-            onChangeText={v => update('purchase_date', v)}
+            onChange={v => update('purchase_date', v)}
             containerStyle={{ flex: 1 }}
           />
         </View>
 
         {/* Location */}
-        <Text style={styles.sectionLabel}>Location</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Location</Text>
 
         <Input
           label="Room / Area"
@@ -451,14 +464,13 @@ export default function EditItemScreen() {
         />
 
         {/* Warranty & Serial */}
-        <Text style={styles.sectionLabel}>Warranty & Serial</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Warranty & Serial</Text>
 
         <View style={styles.row}>
-          <Input
+          <DatePickerField
             label="Warranty Expiry"
-            placeholder="YYYY-MM-DD"
             value={formData.warranty_expiry_date}
-            onChangeText={v => update('warranty_expiry_date', v)}
+            onChange={v => update('warranty_expiry_date', v)}
             containerStyle={{ flex: 1, marginRight: 8 }}
           />
           <Input
@@ -476,6 +488,75 @@ export default function EditItemScreen() {
           value={formData.serial_number}
           onChangeText={v => update('serial_number', v)}
         />
+
+        {/* Tags */}
+        <View style={styles.tagsHeader}>
+          <Text style={[styles.sectionLabel, { color: colors.textPrimary, marginBottom: 0 }]}>Tags</Text>
+          <TouchableOpacity
+            style={[styles.addTagBtn, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}
+            onPress={() => setShowTagPicker(v => !v)}
+          >
+            <Ionicons name={showTagPicker ? 'chevron-up' : 'add'} size={16} color={colors.primary} />
+            <Text style={[styles.addTagBtnText, { color: colors.primary }]}>
+              {showTagPicker ? 'Done' : 'Add'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Selected tags row */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagChipScroll}>
+          {selectedTagIds.length === 0 ? (
+            <Text style={[styles.noTagsText, { color: colors.textTertiary }]}>No tags applied</Text>
+          ) : (
+            selectedTagIds.map(tid => {
+              const tag = workspaceTags.find(t => t.id === tid);
+              if (!tag) return null;
+              return (
+                <TouchableOpacity
+                  key={tag.id}
+                  style={[styles.tagChip, { backgroundColor: tag.color_hex + '22', borderColor: tag.color_hex }]}
+                  onPress={() => setSelectedTagIds(prev => prev.filter(x => x !== tag.id))}
+                >
+                  <View style={[styles.tagDot, { backgroundColor: tag.color_hex }]} />
+                  <Text style={[styles.tagChipText, { color: tag.color_hex }]}>{tag.name}</Text>
+                  <Ionicons name="close-circle" size={14} color={tag.color_hex} style={{ marginLeft: 2 }} />
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </ScrollView>
+
+        {/* Tag picker */}
+        {showTagPicker && workspaceTags.length > 0 && (
+          <View style={[styles.tagPickerContainer, { backgroundColor: colors.gray50, borderColor: colors.border }]}>
+            <View style={styles.tagPickerGrid}>
+              {workspaceTags.map(tag => {
+                const selected = selectedTagIds.includes(tag.id);
+                return (
+                  <TouchableOpacity
+                    key={tag.id}
+                    style={[
+                      styles.tagPickerChip,
+                      { backgroundColor: colors.gray100, borderColor: 'transparent' },
+                      selected && { backgroundColor: tag.color_hex + '22', borderColor: tag.color_hex },
+                    ]}
+                    onPress={() =>
+                      setSelectedTagIds(prev =>
+                        selected ? prev.filter(x => x !== tag.id) : [...prev, tag.id]
+                      )
+                    }
+                  >
+                    <View style={[styles.tagDot, { backgroundColor: tag.color_hex }]} />
+                    <Text style={[styles.tagChipText, { color: selected ? tag.color_hex : colors.textSecondary }]}>
+                      {tag.name}
+                    </Text>
+                    {selected && <Ionicons name="checkmark" size={13} color={tag.color_hex} style={{ marginLeft: 2 }} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Actions */}
         <View style={styles.actions}>
@@ -503,17 +584,14 @@ export default function EditItemScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.surface,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 56,
+    paddingTop: 0,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   backBtn: {
     width: 40,
@@ -521,14 +599,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 20,
-    backgroundColor: Colors.gray100,
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.textPrimary,
   },
   headerRight: {
     width: 40,
@@ -552,7 +628,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 200,
-    backgroundColor: Colors.gray100,
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -561,7 +636,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   imageOverlayText: {
-    color: Colors.white,
     marginTop: 8,
     fontWeight: '600',
   },
@@ -582,29 +656,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 10,
-    backgroundColor: Colors.gray50,
     borderRadius: 12,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
     gap: 6,
   },
   photoBtnText: {
     fontSize: 13,
-    color: Colors.textSecondary,
     fontWeight: '500',
   },
   sectionLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.textPrimary,
     marginBottom: 12,
     marginTop: 8,
   },
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: 8,
   },
   chipScroll: {
@@ -615,18 +684,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: Colors.gray100,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  categoryChipActive: {
-    backgroundColor: Colors.primary + '15',
-  },
   categoryChipText: {
     fontSize: 13,
-    color: Colors.textSecondary,
     fontWeight: '500',
     marginLeft: 4,
   },
@@ -641,26 +705,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 8,
     marginBottom: 8,
-    backgroundColor: Colors.gray100,
     minWidth: 64,
     borderWidth: 1.5,
     borderColor: 'transparent',
-  },
-  conditionChipActive: {
-    backgroundColor: Colors.primary + '15',
-    borderColor: Colors.primary,
   },
   conditionIcon: {
     marginBottom: 4,
   },
   conditionLabel: {
     fontSize: 11,
-    color: Colors.textSecondary,
     fontWeight: '500',
-  },
-  conditionLabelActive: {
-    color: Colors.primary,
-    fontWeight: '700',
   },
   row: {
     flexDirection: 'row',
@@ -670,5 +724,71 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     marginTop: 8,
+  },
+  tagsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  addTagBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 4,
+  },
+  addTagBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tagChipScroll: {
+    marginBottom: 12,
+  },
+  noTagsText: {
+    fontSize: 13,
+    paddingVertical: 4,
+  },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    marginRight: 8,
+    gap: 4,
+  },
+  tagDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  tagChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  tagPickerContainer: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  tagPickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tagPickerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    gap: 4,
   },
 });

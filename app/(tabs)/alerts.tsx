@@ -14,8 +14,9 @@ import { useAlerts } from '../../hooks/useAlerts';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { Spinner } from '../../components/ui/Spinner';
-import { Colors } from '../../constants/colors';
+import { SkeletonAlertList } from '../../components/ui/Skeleton';
+import { useColors } from '../../hooks/useColors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatDate } from '../../lib/utils';
 import type { Alert as AlertType } from '../../types';
 
@@ -32,19 +33,21 @@ function getAlertIcon(alertType: string, color: string) {
   }
 }
 
-const ALERT_COLORS: Record<string, string> = {
-  warranty_expiring: Colors.warning,
-  maintenance_due: Colors.info,
-  low_stock: Colors.error,
-  custom: Colors.textSecondary,
-};
-
 export default function AlertsScreen() {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { activeWorkspace } = useWorkspaceContext();
   const { alerts, unreadCount, loading, fetchAlerts, markRead, resolveAlert, markAllRead } =
     useAlerts(activeWorkspace?.id);
   const [refreshing, setRefreshing] = React.useState(false);
+
+  const ALERT_COLORS: Record<string, string> = {
+    warranty_expiring: colors.warning,
+    maintenance_due: colors.info,
+    low_stock: colors.error,
+    custom: colors.textSecondary,
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -56,11 +59,15 @@ export default function AlertsScreen() {
   };
 
   const renderAlert = ({ item }: { item: AlertType }) => {
-    const color = ALERT_COLORS[item.alert_type] ?? Colors.textSecondary;
+    const color = ALERT_COLORS[item.alert_type] ?? colors.textSecondary;
 
     return (
       <TouchableOpacity
-        style={[styles.alertCard, { borderLeftColor: color }, !item.is_read && styles.unreadCard]}
+        style={[
+          styles.alertCard,
+          { backgroundColor: colors.surface, borderLeftColor: color },
+          !item.is_read && { backgroundColor: colors.gray200 },
+        ]}
         onPress={() => {
           markRead(item.id);
           if (item.item_id) {
@@ -70,21 +77,21 @@ export default function AlertsScreen() {
         activeOpacity={0.7}
       >
         <View style={styles.alertRow}>
-          <View style={styles.iconWrap}>
+          <View style={[styles.iconWrap, { backgroundColor: colors.gray200 }]}>
             {getAlertIcon(item.alert_type, color)}
           </View>
           <View style={styles.alertContent}>
-            <Text style={[styles.alertTitle, !item.is_read && styles.unreadTitle]}>
+            <Text style={[styles.alertTitle, { color: colors.textPrimary }, !item.is_read && styles.unreadTitle]}>
               {item.title}
             </Text>
-            <Text style={styles.alertMessage}>{item.message}</Text>
-            <Text style={styles.alertTime}>{formatDate(item.triggered_at)}</Text>
+            <Text style={[styles.alertMessage, { color: colors.textSecondary }]}>{item.message}</Text>
+            <Text style={[styles.alertTime, { color: colors.textTertiary }]}>{formatDate(item.triggered_at)}</Text>
           </View>
           <TouchableOpacity
             onPress={() => resolveAlert(item.id)}
-            style={styles.resolveBtn}
+            style={[styles.resolveBtn, { backgroundColor: colors.successLight }]}
           >
-            <Ionicons name="checkmark" size={14} color={Colors.success} />
+            <Ionicons name="checkmark" size={14} color={colors.success} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -92,12 +99,12 @@ export default function AlertsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top + 8 }]}>
         <View>
-          <Text style={styles.headerTitle}>ALERTS</Text>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>ALERTS</Text>
           {unreadCount > 0 && (
-            <Text style={styles.headerSubtitle}>{unreadCount} unread</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.primary }]}>{unreadCount} unread</Text>
           )}
         </View>
         {unreadCount > 0 && (
@@ -111,12 +118,18 @@ export default function AlertsScreen() {
       </View>
 
       {loading && alerts.length === 0 ? (
-        <Spinner fullScreen />
+        <SkeletonAlertList />
       ) : alerts.length === 0 ? (
         <EmptyState
-          icon={<Ionicons name="notifications-outline" size={64} color={Colors.gray400} />}
+          icon={<Ionicons name="shield-checkmark-outline" size={48} color={colors.success} />}
           title="All clear"
-          description="No active alerts. We'll notify you when items need attention."
+          description="No active alerts right now. Here's what we track for you:"
+          bullets={[
+            'Warranty expiry reminders (30, 7, and 1 day before)',
+            'Scheduled maintenance & service intervals',
+            'Low stock thresholds for tracked quantities',
+            'Custom alerts you set on any item',
+          ]}
         />
       ) : (
         <FlatList
@@ -128,8 +141,8 @@ export default function AlertsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={Colors.primary}
-              colors={[Colors.primary]}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -140,27 +153,23 @@ export default function AlertsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    paddingTop: 56,
+    paddingTop: 0,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: Colors.textPrimary,
     letterSpacing: 2,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: Colors.primary,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -168,19 +177,14 @@ const styles = StyleSheet.create({
   alertCard: {
     marginBottom: 6,
     padding: 12,
-    backgroundColor: Colors.surface,
     borderRadius: 6,
     borderLeftWidth: 3,
-  },
-  unreadCard: {
-    backgroundColor: Colors.gray200,
   },
   alertRow: { flexDirection: 'row', alignItems: 'flex-start' },
   iconWrap: {
     width: 32,
     height: 32,
     borderRadius: 6,
-    backgroundColor: Colors.gray200,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -189,17 +193,15 @@ const styles = StyleSheet.create({
   alertTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: 2,
   },
   unreadTitle: { fontWeight: '800' },
-  alertMessage: { fontSize: 12, color: Colors.textSecondary, lineHeight: 17 },
-  alertTime: { fontSize: 10, color: Colors.textTertiary, marginTop: 3 },
+  alertMessage: { fontSize: 12, lineHeight: 17 },
+  alertTime: { fontSize: 10, marginTop: 3 },
   resolveBtn: {
     width: 28,
     height: 28,
     borderRadius: 4,
-    backgroundColor: Colors.successLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,

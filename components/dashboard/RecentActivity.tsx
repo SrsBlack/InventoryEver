@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 interface RecentActivityProps {
   items: Array<{ created_at: string }>;
@@ -11,6 +11,8 @@ const MAX_BAR_HEIGHT = 60;
 const MIN_BAR_HEIGHT = 4;
 
 export function RecentActivity({ items }: RecentActivityProps) {
+  const colors = useColors();
+
   const days = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -41,7 +43,7 @@ export function RecentActivity({ items }: RecentActivityProps) {
   if (totalThisWeek === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>No items added this week</Text>
+        <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No items added this week</Text>
       </View>
     );
   }
@@ -58,7 +60,7 @@ export function RecentActivity({ items }: RecentActivityProps) {
           return (
             <View key={index} style={styles.barColumn}>
               {day.count > 0 && (
-                <Text style={styles.countLabel}>{day.count}</Text>
+                <Text style={[styles.countLabel, { color: colors.textPrimary }]}>{day.count}</Text>
               )}
               <View style={styles.barWrapper}>
                 <View
@@ -66,12 +68,18 @@ export function RecentActivity({ items }: RecentActivityProps) {
                     styles.bar,
                     {
                       height: barHeight,
-                      backgroundColor: isToday ? Colors.primary : Colors.primary + '60',
+                      backgroundColor: isToday ? colors.primary : colors.primary + '60',
                     },
                   ]}
                 />
               </View>
-              <Text style={[styles.dayLabel, isToday && styles.dayLabelToday]}>
+              <Text
+                style={[
+                  styles.dayLabel,
+                  { color: isToday ? colors.primary : colors.textTertiary },
+                  isToday && styles.dayLabelToday,
+                ]}
+              >
                 {day.label}
               </Text>
             </View>
@@ -99,7 +107,6 @@ const styles = StyleSheet.create({
   countLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: Colors.textPrimary,
     marginBottom: 2,
   },
   barWrapper: {
@@ -114,12 +121,10 @@ const styles = StyleSheet.create({
   },
   dayLabel: {
     fontSize: 10,
-    color: Colors.textTertiary,
     marginTop: 4,
     fontWeight: '500',
   },
   dayLabelToday: {
-    color: Colors.primary,
     fontWeight: '700',
   },
   empty: {
@@ -128,6 +133,5 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    color: Colors.textTertiary,
   },
 });

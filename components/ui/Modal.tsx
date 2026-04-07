@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 interface ModalProps {
   visible: boolean;
@@ -28,12 +28,7 @@ export function Modal({
   size = 'md',
   showClose = true,
 }: ModalProps) {
-  const sizeMap = {
-    sm: '60%',
-    md: '80%',
-    lg: '92%',
-    full: '100%',
-  };
+  const colors = useColors();
 
   return (
     <RNModal
@@ -47,13 +42,25 @@ export function Modal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
-        <View style={[styles.container, { maxHeight: size === 'full' ? '100%' : '85%' }]}>
+        <View style={[
+          styles.container,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            maxHeight: size === 'full' ? '100%' : '85%',
+          },
+        ]}>
           {(title || showClose) && (
-            <View style={styles.header}>
-              {title && <Text style={styles.title}>{title}</Text>}
+            <View style={[styles.header, { borderBottomColor: colors.divider }]}>
+              {title && <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>}
               {showClose && (
-                <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                  <Text style={styles.closeIcon}>✕</Text>
+                <TouchableOpacity
+                  onPress={onClose}
+                  style={[styles.closeBtn, { backgroundColor: colors.gray200 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close"
+                >
+                  <Text style={[styles.closeIcon, { color: colors.textSecondary }]}>✕</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -81,13 +88,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   container: {
-    backgroundColor: Colors.surface,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    borderColor: Colors.border,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
@@ -102,25 +107,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.textPrimary,
     flex: 1,
   },
   closeBtn: {
     width: 28,
     height: 28,
     borderRadius: 4,
-    backgroundColor: Colors.gray200,
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeIcon: {
     fontSize: 14,
-    color: Colors.textSecondary,
     fontWeight: '600',
   },
   body: {

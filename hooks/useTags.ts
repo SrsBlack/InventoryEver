@@ -119,6 +119,33 @@ export function useTags(workspaceId: string | null) {
     if (workspaceId) fetchTags();
   }, [workspaceId, fetchTags]);
 
+  useEffect(() => {
+    if (!workspaceId) return;
+    const sub = supabase
+      .channel(`tags:${workspaceId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tags', filter: `workspace_id=eq.${workspaceId}` },
+        payload => {
+          if (payload.eventType === 'INSERT') {
+            const created = payload.new as Tag;
+            setTags(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+          } else if (payload.eventType === 'UPDATE') {
+            setTags(prev =>
+              prev
+                .map(t => (t.id === (payload.new as Tag).id ? (payload.new as Tag) : t))
+                .sort((a, b) => a.name.localeCompare(b.name))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            const removed = payload.old as Partial<Tag>;
+            setTags(prev => prev.filter(t => t.id !== removed.id));
+          }
+        }
+      )
+      .subscribe();
+    return () => { sub.unsubscribe(); };
+  }, [workspaceId]);
+
   return {
     tags,
     loading,

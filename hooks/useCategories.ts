@@ -83,6 +83,33 @@ export function useCategories(workspaceId: string | null) {
     fetchCategories();
   }, [fetchCategories]);
 
+  useEffect(() => {
+    if (!workspaceId) return;
+    const sub = supabase
+      .channel(`categories:${workspaceId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories', filter: `workspace_id=eq.${workspaceId}` },
+        payload => {
+          if (payload.eventType === 'INSERT') {
+            const created = payload.new as Category;
+            setCategories(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+          } else if (payload.eventType === 'UPDATE') {
+            setCategories(prev =>
+              prev
+                .map(c => (c.id === (payload.new as Category).id ? (payload.new as Category) : c))
+                .sort((a, b) => a.name.localeCompare(b.name))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            const removed = payload.old as Partial<Category>;
+            setCategories(prev => prev.filter(c => c.id !== removed.id));
+          }
+        }
+      )
+      .subscribe();
+    return () => { sub.unsubscribe(); };
+  }, [workspaceId]);
+
   return {
     categories,
     loading,

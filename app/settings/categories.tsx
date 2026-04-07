@@ -16,7 +16,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 import type { Category } from '../../types';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -69,6 +69,7 @@ export default function CategoriesScreen() {
   const { activeWorkspace } = useWorkspaceContext();
   const { categories, createCategory, updateCategory, deleteCategory } =
     useCategories(activeWorkspace?.id ?? null);
+  const colors = useColors();
 
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<CategoryWithSystem | null>(null);
@@ -144,11 +145,11 @@ export default function CategoriesScreen() {
     <View
       style={[
         styles.categoryRow,
-        { borderBottomWidth: 1, borderBottomColor: Colors.divider },
+        { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.divider },
       ]}
     >
       <View
-        style={[styles.colorDot, { backgroundColor: item.color_hex ?? Colors.gray300 }]}
+        style={[styles.colorDot, { backgroundColor: item.color_hex ?? colors.gray300 }]}
       />
       <Ionicons
         name={
@@ -156,11 +157,11 @@ export default function CategoriesScreen() {
           'cube-outline'
         }
         size={20}
-        color={Colors.textSecondary}
+        color={colors.textSecondary}
         style={styles.rowIcon}
       />
-      <Text style={styles.categoryName}>{item.name}</Text>
-      <Badge label="System" size="sm" backgroundColor={Colors.gray300} color={Colors.gray700} />
+      <Text style={[styles.categoryName, { color: colors.textPrimary }]}>{item.name}</Text>
+      <Badge label="System" size="sm" backgroundColor={colors.gray300} color={colors.gray700} />
     </View>
   );
 
@@ -168,11 +169,11 @@ export default function CategoriesScreen() {
     <View
       style={[
         styles.categoryRow,
-        { borderBottomWidth: 1, borderBottomColor: Colors.divider },
+        { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.divider },
       ]}
     >
       <View
-        style={[styles.colorDot, { backgroundColor: item.color_hex ?? Colors.gray300 }]}
+        style={[styles.colorDot, { backgroundColor: item.color_hex ?? colors.gray300 }]}
       />
       <Ionicons
         name={
@@ -180,23 +181,23 @@ export default function CategoriesScreen() {
           'cube-outline'
         }
         size={20}
-        color={Colors.textSecondary}
+        color={colors.textSecondary}
         style={styles.rowIcon}
       />
-      <Text style={styles.categoryName}>{item.name}</Text>
+      <Text style={[styles.categoryName, { color: colors.textPrimary }]}>{item.name}</Text>
       <TouchableOpacity
         onPress={() => openEdit(item)}
         hitSlop={8}
         style={styles.actionBtn}
       >
-        <Ionicons name="pencil-outline" size={18} color={Colors.primary} />
+        <Ionicons name="pencil-outline" size={18} color={colors.primary} />
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => handleDelete(item)}
         hitSlop={8}
         style={styles.actionBtn}
       >
-        <Ionicons name="trash-outline" size={18} color={Colors.error} />
+        <Ionicons name="trash-outline" size={18} color={colors.error} />
       </TouchableOpacity>
     </View>
   );
@@ -205,7 +206,7 @@ export default function CategoriesScreen() {
     <>
       <Stack.Screen options={{ title: 'Categories' }} />
 
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.body}>
           <Button
             title="Create Category"
@@ -218,7 +219,7 @@ export default function CategoriesScreen() {
           {/* System categories */}
           {systemCategories.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>System</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>System</Text>
               <Card variant="bordered" padding={0} style={styles.listCard}>
                 <FlatList
                   data={systemCategories}
@@ -231,17 +232,17 @@ export default function CategoriesScreen() {
           )}
 
           {/* Custom categories */}
-          <Text style={styles.sectionTitle}>Custom</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Custom</Text>
           {customCategories.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons
                 name="color-palette-outline"
                 size={40}
-                color={Colors.gray300}
+                color={colors.gray300}
                 style={styles.emptyIcon}
               />
-              <Text style={styles.emptyText}>No custom categories yet</Text>
-              <Text style={styles.emptySubtext}>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No custom categories yet</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>
                 Tap "Create Category" to add your own
               </Text>
             </View>
@@ -275,14 +276,15 @@ export default function CategoriesScreen() {
         />
 
         {/* Icon picker */}
-        <Text style={styles.pickerLabel}>Icon</Text>
+        <Text style={[styles.pickerLabel, { color: colors.textPrimary }]}>Icon</Text>
         <View style={styles.iconGrid}>
           {ICON_OPTIONS.map(icon => (
             <TouchableOpacity
               key={icon}
               style={[
                 styles.iconCell,
-                selectedIcon === icon && styles.iconCellSelected,
+                { backgroundColor: colors.gray100 },
+                selectedIcon === icon && { borderColor: colors.primary, backgroundColor: colors.primary + '15' },
               ]}
               onPress={() => setSelectedIcon(icon)}
             >
@@ -290,7 +292,7 @@ export default function CategoriesScreen() {
                 name={icon}
                 size={22}
                 color={
-                  selectedIcon === icon ? Colors.primary : Colors.textSecondary
+                  selectedIcon === icon ? colors.primary : colors.textSecondary
                 }
               />
             </TouchableOpacity>
@@ -298,7 +300,7 @@ export default function CategoriesScreen() {
         </View>
 
         {/* Color picker */}
-        <Text style={styles.pickerLabel}>Color</Text>
+        <Text style={[styles.pickerLabel, { color: colors.textPrimary }]}>Color</Text>
         <View style={styles.colorRow}>
           {COLOR_OPTIONS.map(color => (
             <TouchableOpacity
@@ -307,7 +309,7 @@ export default function CategoriesScreen() {
               onPress={() => setSelectedColor(color)}
             >
               {selectedColor === color && (
-                <Ionicons name="checkmark" size={14} color={Colors.white} />
+                <Ionicons name="checkmark" size={14} color={colors.white} />
               )}
             </TouchableOpacity>
           ))}
@@ -336,13 +338,12 @@ export default function CategoriesScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   body: { padding: 16 },
   createBtn: { marginBottom: 20 },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 8,
@@ -354,7 +355,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 13,
-    backgroundColor: Colors.surface,
   },
   colorDot: {
     width: 10,
@@ -367,7 +367,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-    color: Colors.textPrimary,
   },
   actionBtn: { marginLeft: 12 },
   emptyState: {
@@ -378,17 +377,14 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.textSecondary,
     marginBottom: 4,
   },
   emptySubtext: {
     fontSize: 13,
-    color: Colors.textTertiary,
   },
   pickerLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: 10,
   },
   iconGrid: {
@@ -403,13 +399,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.gray100,
     borderWidth: 1.5,
     borderColor: 'transparent',
-  },
-  iconCellSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '15',
   },
   colorRow: {
     flexDirection: 'row',

@@ -10,20 +10,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 import { useTags } from '../../hooks/useTags';
 import type { Tag } from '../../types';
-
-const PRESET_COLORS = [
-  Colors.primary,
-  Colors.secondary,
-  Colors.accent,
-  Colors.success,
-  Colors.warning,
-  Colors.error,
-  Colors.info,
-  Colors.gray500,
-];
 
 interface TagManagerProps {
   workspaceId: string;
@@ -38,10 +27,23 @@ export function TagManager({
   onTagsChange,
   mode = 'selector',
 }: TagManagerProps) {
+  const colors = useColors();
+
+  const PRESET_COLORS = [
+    colors.primary,
+    colors.secondary,
+    colors.accent,
+    colors.success,
+    colors.warning,
+    colors.error,
+    colors.info,
+    colors.gray500,
+  ];
+
   const { tags, loading, createTag, deleteTag } = useTags(workspaceId);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState<string>(Colors.primary);
+  const [newTagColor, setNewTagColor] = useState<string>(colors.primary);
   const [creating, setCreating] = useState(false);
 
   const toggleTag = (tagId: string) => {
@@ -61,7 +63,7 @@ export function TagManager({
     setCreating(false);
     if (tag) {
       setNewTagName('');
-      setNewTagColor(Colors.primary);
+      setNewTagColor(colors.primary);
       setShowCreateForm(false);
       if (onTagsChange && mode === 'selector') {
         onTagsChange([...selectedTagIds, tag.id]);
@@ -90,11 +92,19 @@ export function TagManager({
   };
 
   const CreateForm = () => (
-    <View style={styles.createForm}>
+    <View
+      style={[
+        styles.createForm,
+        { backgroundColor: colors.gray50, borderColor: colors.border },
+      ]}
+    >
       <TextInput
-        style={styles.createInput}
+        style={[
+          styles.createInput,
+          { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border },
+        ]}
         placeholder="Tag name..."
-        placeholderTextColor={Colors.textTertiary}
+        placeholderTextColor={colors.textTertiary}
         value={newTagName}
         onChangeText={setNewTagName}
         autoFocus
@@ -109,7 +119,7 @@ export function TagManager({
             style={[
               styles.colorDot,
               { backgroundColor: color },
-              newTagColor === color && styles.colorDotSelected,
+              newTagColor === color && [styles.colorDotSelected, { borderColor: colors.textPrimary }],
             ]}
             onPress={() => setNewTagColor(color)}
           />
@@ -117,24 +127,27 @@ export function TagManager({
       </View>
       <View style={styles.createActions}>
         <TouchableOpacity
-          style={styles.createCancelBtn}
+          style={[styles.createCancelBtn, { backgroundColor: colors.gray200 }]}
           onPress={() => {
             setShowCreateForm(false);
             setNewTagName('');
-            setNewTagColor(Colors.primary);
+            setNewTagColor(colors.primary);
           }}
         >
-          <Text style={styles.createCancelText}>Cancel</Text>
+          <Text style={[styles.createCancelText, { color: colors.textSecondary }]}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.createAddBtn, !newTagName.trim() && styles.createAddBtnDisabled]}
+          style={[
+            styles.createAddBtn,
+            { backgroundColor: !newTagName.trim() ? colors.gray300 : colors.primary },
+          ]}
           onPress={handleCreateTag}
           disabled={!newTagName.trim() || creating}
         >
           {creating ? (
-            <ActivityIndicator size="small" color={Colors.white} />
+            <ActivityIndicator size="small" color={colors.white} />
           ) : (
-            <Text style={styles.createAddText}>Add</Text>
+            <Text style={[styles.createAddText, { color: colors.white }]}>Add</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -148,27 +161,30 @@ export function TagManager({
           style={styles.createTagButton}
           onPress={() => setShowCreateForm(!showCreateForm)}
         >
-          <Ionicons name="add-circle" size={18} color={Colors.primary} />
-          <Text style={styles.createTagButtonText}>Create Tag</Text>
+          <Ionicons name="add-circle" size={18} color={colors.primary} />
+          <Text style={[styles.createTagButtonText, { color: colors.primary }]}>Create Tag</Text>
         </TouchableOpacity>
 
         {showCreateForm && <CreateForm />}
 
         {loading ? (
-          <ActivityIndicator color={Colors.primary} style={styles.loader} />
+          <ActivityIndicator color={colors.primary} style={styles.loader} />
         ) : tags.length === 0 ? (
-          <Text style={styles.emptyText}>No tags yet. Create one above.</Text>
+          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No tags yet. Create one above.</Text>
         ) : (
           tags.map(tag => (
-            <View key={tag.id} style={styles.managerRow}>
+            <View
+              key={tag.id}
+              style={[styles.managerRow, { borderBottomColor: colors.divider }]}
+            >
               <View style={[styles.managerDot, { backgroundColor: tag.color_hex }]} />
-              <Text style={styles.managerTagName}>{tag.name}</Text>
+              <Text style={[styles.managerTagName, { color: colors.textPrimary }]}>{tag.name}</Text>
               <TouchableOpacity
                 style={styles.deleteBtn}
                 onPress={() => handleDeleteTag(tag)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="trash-outline" size={16} color={Colors.error} />
+                <Ionicons name="trash-outline" size={16} color={colors.error} />
               </TouchableOpacity>
             </View>
           ))
@@ -187,7 +203,7 @@ export function TagManager({
         style={styles.selectorScroll}
       >
         {loading ? (
-          <ActivityIndicator color={Colors.primary} style={styles.selectorLoader} />
+          <ActivityIndicator color={colors.primary} style={styles.selectorLoader} />
         ) : (
           tags.map(tag => {
             const selected = selectedTagIds.includes(tag.id);
@@ -196,8 +212,7 @@ export function TagManager({
                 key={tag.id}
                 style={[
                   styles.tagChip,
-                  { borderColor: tag.color_hex },
-                  selected && { backgroundColor: tag.color_hex + '22' },
+                  { borderColor: tag.color_hex, backgroundColor: selected ? tag.color_hex + '22' : colors.gray100 },
                 ]}
                 onPress={() => toggleTag(tag.id)}
                 activeOpacity={0.75}
@@ -211,7 +226,7 @@ export function TagManager({
                   />
                 )}
                 <View style={[styles.tagDot, { backgroundColor: tag.color_hex }]} />
-                <Text style={[styles.tagChipText, selected && { color: tag.color_hex, fontWeight: '700' }]}>
+                <Text style={[styles.tagChipText, { color: selected ? tag.color_hex : colors.textSecondary }, selected && styles.tagChipTextSelected]}>
                   {tag.name}
                 </Text>
               </TouchableOpacity>
@@ -221,10 +236,13 @@ export function TagManager({
 
         {!showCreateForm && (
           <TouchableOpacity
-            style={styles.addChipBtn}
+            style={[
+              styles.addChipBtn,
+              { borderColor: colors.border, backgroundColor: colors.gray50 },
+            ]}
             onPress={() => setShowCreateForm(true)}
           >
-            <Ionicons name="add" size={16} color={Colors.textSecondary} />
+            <Ionicons name="add" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -253,8 +271,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: Colors.gray100,
     marginRight: 8,
   },
   checkIcon: {
@@ -268,39 +284,34 @@ const styles = StyleSheet.create({
   },
   tagChipText: {
     fontSize: 12,
-    color: Colors.textSecondary,
     fontWeight: '500',
+  },
+  tagChipTextSelected: {
+    fontWeight: '700',
   },
   addChipBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: Colors.border,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.gray50,
   },
 
   // Create form
   createForm: {
-    backgroundColor: Colors.gray50,
     borderRadius: 12,
     padding: 12,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   createInput: {
-    backgroundColor: Colors.surface,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: Colors.textPrimary,
     borderWidth: 1,
-    borderColor: Colors.border,
     marginBottom: 10,
   },
   colorRow: {
@@ -315,7 +326,6 @@ const styles = StyleSheet.create({
   },
   colorDotSelected: {
     borderWidth: 2.5,
-    borderColor: Colors.textPrimary,
     transform: [{ scale: 1.15 }],
   },
   createActions: {
@@ -327,27 +337,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 8,
-    backgroundColor: Colors.gray200,
   },
   createCancelText: {
     fontSize: 13,
-    color: Colors.textSecondary,
     fontWeight: '600',
   },
   createAddBtn: {
     paddingHorizontal: 18,
     paddingVertical: 7,
     borderRadius: 8,
-    backgroundColor: Colors.primary,
     minWidth: 56,
     alignItems: 'center',
   },
-  createAddBtnDisabled: {
-    backgroundColor: Colors.gray300,
-  },
   createAddText: {
     fontSize: 13,
-    color: Colors.white,
     fontWeight: '700',
   },
 
@@ -364,7 +367,6 @@ const styles = StyleSheet.create({
   },
   createTagButtonText: {
     fontSize: 14,
-    color: Colors.primary,
     fontWeight: '600',
     marginLeft: 6,
   },
@@ -373,7 +375,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    color: Colors.textTertiary,
     textAlign: 'center',
     paddingVertical: 12,
   },
@@ -383,7 +384,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
   },
   managerDot: {
     width: 12,
@@ -394,7 +394,6 @@ const styles = StyleSheet.create({
   managerTagName: {
     flex: 1,
     fontSize: 14,
-    color: Colors.textPrimary,
     fontWeight: '500',
   },
   deleteBtn: {

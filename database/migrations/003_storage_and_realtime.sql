@@ -12,8 +12,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE workspace_members;
 -- Run these in the Supabase Dashboard → Storage, OR via the API:
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('item-images', 'item-images', true);
 
--- Storage RLS (if using private bucket, uncomment):
-/*
+-- Storage RLS for item-images bucket
+DROP POLICY IF EXISTS "Authenticated users can upload images" ON storage.objects;
 CREATE POLICY "Authenticated users can upload images"
   ON storage.objects FOR INSERT
   WITH CHECK (
@@ -22,17 +22,18 @@ CREATE POLICY "Authenticated users can upload images"
     (storage.foldername(name))[1] = auth.uid()::text
   );
 
+DROP POLICY IF EXISTS "Anyone can view item images" ON storage.objects;
 CREATE POLICY "Anyone can view item images"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'item-images');
 
+DROP POLICY IF EXISTS "Users can delete own images" ON storage.objects;
 CREATE POLICY "Users can delete own images"
   ON storage.objects FOR DELETE
   USING (
     bucket_id = 'item-images' AND
     (storage.foldername(name))[1] = auth.uid()::text
   );
-*/
 
 -- ============================================================
 -- WARRANTY ALERT FUNCTION

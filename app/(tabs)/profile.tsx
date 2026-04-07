@@ -15,6 +15,7 @@ import { useWorkspaceContext } from '../../contexts/WorkspaceContext';
 import { useSubscriptionContext } from '../../contexts/SubscriptionContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useColors } from '../../hooks/useColors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
@@ -26,7 +27,8 @@ import { supabase } from '../../lib/supabase';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, profile, signOut } = useAuthContext();
+  const insets = useSafeAreaInsets();
+  const { user, profile, signOut, deleteAccount } = useAuthContext();
   const { activeWorkspace, workspaces, createWorkspace, switchWorkspace } = useWorkspaceContext();
   const { tier, limits, purchasePro, purchaseBusiness, restorePurchases } =
     useSubscriptionContext();
@@ -88,6 +90,44 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'This Cannot Be Undone',
+              'All your data — items, workspaces, images — will be permanently deleted.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete My Account',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await deleteAccount();
+                      router.replace('/(auth)/sign-in');
+                    } catch (err) {
+                      Alert.alert(
+                        'Error',
+                        err instanceof Error ? err.message : 'Failed to delete account. Please try again.'
+                      );
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   const handleCreateWorkspace = async () => {
     if (!workspaceName.trim()) return;
     setCreating(true);
@@ -131,20 +171,40 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       {/* Profile Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>
-            {profile?.full_name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? '?'}
-          </Text>
-        </View>
+      <View style={[styles.header, { backgroundColor: colors.surface, paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity
+          onPress={() => router.push('/settings/edit-profile')}
+          activeOpacity={0.8}
+          style={styles.avatarBtn}
+        >
+          {profile?.avatar_url ? (
+            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+              <Image
+                source={{ uri: profile.avatar_url }}
+                style={{ width: 48, height: 48, borderRadius: 8 }}
+              />
+            </View>
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+              <Text style={styles.avatarText}>
+                {profile?.full_name?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? '?'}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={[styles.userName, { color: colors.textPrimary }]}>{profile?.full_name ?? 'User'}</Text>
           <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
         </View>
-        <View style={styles.tierDot}>
-          <View style={[styles.tierDotInner, { backgroundColor: tierColors[tier] }]} />
-          <Text style={[styles.tierLabel, { color: colors.textSecondary }]}>{tier.toUpperCase()}</Text>
-        </View>
+        <TouchableOpacity
+          onPress={() => router.push('/settings/edit-profile')}
+          style={[styles.editBtn, { backgroundColor: colors.gray200 }]}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Edit Profile"
+        >
+          <Ionicons name="pencil" size={16} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.body}>
@@ -251,6 +311,16 @@ export default function ProfileScreen() {
           style={styles.newWorkspaceBtn}
         />
 
+        <TouchableOpacity
+          style={[styles.joinWorkspaceBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => router.push('/workspace/join')}
+          activeOpacity={0.75}
+        >
+          <Ionicons name="enter-outline" size={18} color={colors.primary} style={styles.workspaceIcon} />
+          <Text style={[styles.joinWorkspaceBtnText, { color: colors.primary }]}>Join a Workspace</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+        </TouchableOpacity>
+
         {/* Account Settings */}
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ACCOUNT</Text>
 
@@ -293,10 +363,18 @@ export default function ProfileScreen() {
         <View style={[styles.settingsCard, { backgroundColor: colors.surface }]}>
           {([
             { iconName: 'notifications', label: 'Notifications', onPress: () => router.push('/settings/notifications') },
+            { iconName: 'hand-left', label: 'Lending Tracker', onPress: () => router.push('/lending') },
+            { iconName: 'location', label: 'Locations', onPress: () => router.push('/locations') },
+            { iconName: 'qr-code', label: 'QR / Labels', onPress: () => router.push('/labels') },
             { iconName: 'build', label: 'Maintenance Schedule', onPress: () => router.push('/settings/maintenance') },
             { iconName: 'color-palette', label: 'Categories', onPress: () => router.push('/settings/categories') },
-            { iconName: 'lock-closed', label: 'Privacy & Security', onPress: () => Alert.alert('Coming Soon', 'Privacy & Security settings will be available in a future update.') },
-            { iconName: 'bar-chart', label: 'Export Data', onPress: () => router.push('/settings/export') },
+            { iconName: 'lock-closed', label: 'Privacy Policy', onPress: () => router.push('/settings/privacy-policy') },
+            { iconName: 'document-text', label: 'Terms of Service', onPress: () => router.push('/settings/terms') },
+            { iconName: 'albums', label: 'Collections', onPress: () => router.push('/collections') },
+            { iconName: 'trending-down', label: 'Depreciation', onPress: () => router.push('/settings/depreciation') },
+            { iconName: 'shield-checkmark', label: 'Insurance Report', onPress: () => router.push('/settings/insurance') },
+            { iconName: 'bar-chart', label: 'Analytics & Reports', onPress: () => router.push('/analytics') },
+            { iconName: 'download-outline', label: 'Export Data', onPress: () => router.push('/settings/export') },
             { iconName: 'help-circle', label: 'Help & Support', onPress: () => router.push('/settings/help') },
             { iconName: 'star', label: 'Rate the App', onPress: () => Alert.alert('Rate InventoryEver', 'Thank you for using InventoryEver! Rating support will be available when the app is published.') },
           ] as { iconName: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void }[]).map((item, i, arr) => (
@@ -322,6 +400,21 @@ export default function ProfileScreen() {
           fullWidth
           style={styles.signOutBtn}
         />
+
+        {/* Danger Zone */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>DANGER ZONE</Text>
+        <View style={[styles.dangerZone, { borderColor: colors.error + '44', backgroundColor: colors.error + '08' }]}>
+          <Text style={[styles.dangerZoneDesc, { color: colors.textSecondary }]}>
+            Permanently delete your account and all associated data. This action cannot be undone.
+          </Text>
+          <Button
+            title="Delete Account"
+            onPress={handleDeleteAccount}
+            variant="danger"
+            fullWidth
+            style={{ marginTop: 12 }}
+          />
+        </View>
 
         <Text style={[styles.version, { color: colors.textTertiary }]}>InventoryEver v1.0.0</Text>
       </View>
@@ -370,50 +463,115 @@ function LimitRow({ iconName, label, value, colors }: { iconName: React.Componen
   );
 }
 
+const FEATURE_ROWS = [
+  { label: 'Items', free: '50', pro: '1,000', business: '50,000' },
+  { label: 'AI Scans / month', free: '5', pro: '100', business: '10,000' },
+  { label: 'Workspaces', free: '1', pro: '3', business: '20' },
+  { label: 'Storage', free: '500 MB', pro: '5 GB', business: '100 GB' },
+  { label: 'Team members', free: '—', pro: '5', business: 'Unlimited' },
+  { label: 'Analytics & Reports', free: '—', pro: '✓', business: '✓' },
+  { label: 'Barcode Scanner', free: '✓', pro: '✓', business: '✓' },
+  { label: 'Warranty Alerts', free: '✓', pro: '✓', business: '✓' },
+  { label: 'Lending Tracker', free: '—', pro: '✓', business: '✓' },
+  { label: 'Insurance Reports', free: '—', pro: '✓', business: '✓' },
+  { label: 'Depreciation Calc', free: '—', pro: '✓', business: '✓' },
+  { label: 'Data Export', free: '—', pro: '✓', business: '✓' },
+  { label: 'Priority Support', free: '—', pro: '—', business: '✓' },
+];
+
 function UpgradeModal({ onPro, onBusiness, colors }: { onPro: () => void; onBusiness: () => void; colors: any }) {
-  const plans: { tier: string; price: string; color: string; iconName: React.ComponentProps<typeof Ionicons>['name']; features: string[]; onPress: () => void }[] = [
-    {
-      tier: 'Pro',
-      price: '$9.99/mo',
-      color: colors.primary,
-      iconName: 'star',
-      features: ['1,000 items', '100 AI scans/month', '3 workspaces', '5 GB storage'],
-      onPress: onPro,
-    },
-    {
-      tier: 'Business',
-      price: '$29.99/mo',
-      color: colors.warning,
-      iconName: 'business',
-      features: ['50,000 items', '10,000 AI scans/month', '20 workspaces', '100 GB storage'],
-      onPress: onBusiness,
-    },
-  ];
+  const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
+  const yearlyDiscount = 0.17; // ~2 months free
+
+  const proMonthly = 9.99;
+  const businessMonthly = 29.99;
+  const proPrice = billing === 'yearly'
+    ? `$${(proMonthly * 12 * (1 - yearlyDiscount) / 12).toFixed(2)}/mo`
+    : `$${proMonthly}/mo`;
+  const businessPrice = billing === 'yearly'
+    ? `$${(businessMonthly * 12 * (1 - yearlyDiscount) / 12).toFixed(2)}/mo`
+    : `$${businessMonthly}/mo`;
+
   return (
     <View>
-      {plans.map(plan => (
-        <View key={plan.tier} style={{
-          marginBottom: 10,
-          padding: 14,
-          backgroundColor: colors.surface,
-          borderRadius: 6,
-          borderWidth: 1,
-          borderColor: colors.border,
-          borderLeftWidth: 3,
-          borderLeftColor: plan.color,
-        }}>
-          <Ionicons name={plan.iconName} size={20} color={plan.color} style={{ marginBottom: 4 }} />
-          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textPrimary }}>{plan.tier}</Text>
-          <Text style={{ fontSize: 14, color: plan.color, fontWeight: '700', marginBottom: 8 }}>{plan.price}</Text>
-          {plan.features.map(f => (
-            <View key={f} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 3 }}>
-              <Ionicons name="checkmark" size={13} color={colors.textSecondary} style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>{f}</Text>
-            </View>
-          ))}
-          <Button title={`Get ${plan.tier}`} onPress={plan.onPress} fullWidth style={{ marginTop: 10 }} />
+      {/* Billing toggle */}
+      <View style={{ flexDirection: 'row', backgroundColor: colors.gray100, borderRadius: 8, padding: 3, marginBottom: 20 }}>
+        {(['monthly', 'yearly'] as const).map(b => (
+          <TouchableOpacity
+            key={b}
+            style={[
+              { flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
+              billing === b && { backgroundColor: colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+            ]}
+            onPress={() => setBilling(b)}
+          >
+            <Text style={{ fontSize: 13, fontWeight: billing === b ? '700' : '500', color: billing === b ? colors.textPrimary : colors.textSecondary }}>
+              {b === 'monthly' ? 'Monthly' : 'Yearly  🎉 17% off'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Pro card */}
+      <View style={{ borderRadius: 12, borderWidth: 2, borderColor: colors.primary, overflow: 'hidden', marginBottom: 12 }}>
+        {/* Most popular badge */}
+        <View style={{ backgroundColor: colors.primary, paddingVertical: 6, alignItems: 'center' }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.white, letterSpacing: 1.5 }}>✦  MOST POPULAR  ✦</Text>
         </View>
-      ))}
+        <View style={{ padding: 16, backgroundColor: colors.surface }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <Ionicons name="star" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+            <Text style={{ fontSize: 20, fontWeight: '800', color: colors.textPrimary }}>Pro</Text>
+          </View>
+          <Text style={{ fontSize: 26, fontWeight: '800', color: colors.primary, marginBottom: 4 }}>{proPrice}</Text>
+          {billing === 'yearly' && (
+            <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 8 }}>billed ${(proMonthly * 12 * (1 - yearlyDiscount)).toFixed(0)}/year</Text>
+          )}
+          <Button title="Start Pro Free Trial" onPress={onPro} fullWidth style={{ marginTop: 8 }} />
+        </View>
+      </View>
+
+      {/* Business card */}
+      <View style={{ borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 20 }}>
+        <View style={{ padding: 16, backgroundColor: colors.surface }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <Ionicons name="business" size={20} color={colors.warning} style={{ marginRight: 8 }} />
+            <Text style={{ fontSize: 20, fontWeight: '800', color: colors.textPrimary }}>Business</Text>
+          </View>
+          <Text style={{ fontSize: 26, fontWeight: '800', color: colors.warning, marginBottom: 4 }}>{businessPrice}</Text>
+          {billing === 'yearly' && (
+            <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 8 }}>billed ${(businessMonthly * 12 * (1 - yearlyDiscount)).toFixed(0)}/year</Text>
+          )}
+          <Button title="Get Business" onPress={onBusiness} variant="secondary" fullWidth style={{ marginTop: 8 }} />
+        </View>
+      </View>
+
+      {/* Feature comparison table */}
+      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary, letterSpacing: 1, marginBottom: 10 }}>FEATURE COMPARISON</Text>
+      <View style={{ borderRadius: 8, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', backgroundColor: colors.gray100, paddingVertical: 8, paddingHorizontal: 12 }}>
+          <Text style={{ flex: 2, fontSize: 11, fontWeight: '700', color: colors.textTertiary }}>FEATURE</Text>
+          <Text style={{ flex: 1, fontSize: 11, fontWeight: '700', color: colors.textTertiary, textAlign: 'center' }}>FREE</Text>
+          <Text style={{ flex: 1, fontSize: 11, fontWeight: '700', color: colors.primary, textAlign: 'center' }}>PRO</Text>
+          <Text style={{ flex: 1, fontSize: 11, fontWeight: '700', color: colors.warning, textAlign: 'center' }}>BIZ</Text>
+        </View>
+        {FEATURE_ROWS.map((row, i) => (
+          <View key={row.label} style={[
+            { flexDirection: 'row', paddingVertical: 9, paddingHorizontal: 12, alignItems: 'center' },
+            i % 2 === 0 && { backgroundColor: colors.gray50 },
+          ]}>
+            <Text style={{ flex: 2, fontSize: 12, color: colors.textSecondary }}>{row.label}</Text>
+            <Text style={{ flex: 1, fontSize: 12, color: row.free === '—' ? colors.textTertiary : colors.textSecondary, textAlign: 'center' }}>{row.free}</Text>
+            <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: row.pro === '—' ? colors.textTertiary : colors.primary, textAlign: 'center' }}>{row.pro}</Text>
+            <Text style={{ flex: 1, fontSize: 12, fontWeight: '600', color: row.business === '—' ? colors.textTertiary : colors.warning, textAlign: 'center' }}>{row.business}</Text>
+          </View>
+        ))}
+      </View>
+
+      <Text style={{ fontSize: 11, color: colors.textTertiary, textAlign: 'center', marginTop: 16, lineHeight: 16 }}>
+        Cancel anytime · Prices in USD · Billed through App Store / Google Play
+      </Text>
     </View>
   );
 }
@@ -421,7 +579,7 @@ function UpgradeModal({ onPro, onBusiness, colors }: { onPro: () => void; onBusi
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    paddingTop: 56,
+    paddingTop: 0,
     paddingBottom: 16,
     paddingHorizontal: 16,
     flexDirection: 'row',
@@ -479,7 +637,16 @@ const styles = StyleSheet.create({
   workspaceName: { fontSize: 14, fontWeight: '600' },
   workspaceType: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 },
   membersBtn: { padding: 4 },
-  newWorkspaceBtn: { marginBottom: 20 },
+  newWorkspaceBtn: { marginBottom: 8 },
+  joinWorkspaceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    marginBottom: 20,
+  },
+  joinWorkspaceBtnText: { flex: 1, fontSize: 14, fontWeight: '600' },
   themeCard: {
     marginBottom: 10,
     padding: 14,
@@ -515,5 +682,23 @@ const styles = StyleSheet.create({
   settingsIcon: { marginRight: 10 },
   settingsLabel: { flex: 1, fontSize: 14, fontWeight: '500' },
   signOutBtn: { marginBottom: 14 },
+  avatarBtn: {},
+  editBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dangerZone: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 16,
+  },
+  dangerZoneDesc: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
   version: { textAlign: 'center', fontSize: 11, marginBottom: 32 },
 });

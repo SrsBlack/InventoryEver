@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Badge } from '../ui/Badge';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 export interface MemberWithProfile {
   id: string;
@@ -18,20 +18,6 @@ interface MemberCardProps {
   onRemove: (memberId: string) => void;
 }
 
-const ROLE_COLORS: Record<string, string> = {
-  owner: Colors.warning,
-  admin: '#8B5CF6',
-  editor: Colors.info,
-  viewer: Colors.gray500,
-};
-
-const AVATAR_COLORS: Record<string, string> = {
-  owner: Colors.warning,
-  admin: '#8B5CF6',
-  editor: Colors.info,
-  viewer: Colors.gray400,
-};
-
 const ROLES = ['admin', 'editor', 'viewer'] as const;
 
 export function MemberCard({
@@ -40,11 +26,27 @@ export function MemberCard({
   onChangeRole,
   onRemove,
 }: MemberCardProps) {
+  const colors = useColors();
+
+  const ROLE_COLORS: Record<string, string> = {
+    owner: colors.warning,
+    admin: '#8B5CF6',
+    editor: colors.info,
+    viewer: colors.gray500,
+  };
+
+  const AVATAR_COLORS: Record<string, string> = {
+    owner: colors.warning,
+    admin: '#8B5CF6',
+    editor: colors.info,
+    viewer: colors.gray400,
+  };
+
   const displayName = member.profile?.full_name || member.profile?.email || 'Unknown User';
   const email = member.profile?.email || '';
   const initial = displayName.charAt(0).toUpperCase();
-  const avatarColor = AVATAR_COLORS[member.role] ?? Colors.gray400;
-  const roleBadgeColor = ROLE_COLORS[member.role] ?? Colors.gray500;
+  const avatarColor = AVATAR_COLORS[member.role] ?? colors.gray400;
+  const roleBadgeColor = ROLE_COLORS[member.role] ?? colors.gray500;
   const isOwner = member.role === 'owner';
   const canAct = isCurrentUserOwnerOrAdmin && !isOwner;
 
@@ -77,14 +79,14 @@ export function MemberCard({
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.surface }]}>
       <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-        <Text style={styles.avatarText}>{initial}</Text>
+        <Text style={[styles.avatarText, { color: colors.white }]}>{initial}</Text>
       </View>
 
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
-        {email ? <Text style={styles.email} numberOfLines={1}>{email}</Text> : null}
+        <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>{displayName}</Text>
+        {email ? <Text style={[styles.email, { color: colors.textSecondary }]} numberOfLines={1}>{email}</Text> : null}
         <Badge
           label={member.role.toUpperCase()}
           backgroundColor={roleBadgeColor}
@@ -95,11 +97,11 @@ export function MemberCard({
 
       {canAct ? (
         <TouchableOpacity onPress={handleActions} style={styles.actionBtn} hitSlop={8}>
-          <Ionicons name="ellipsis-horizontal" size={20} color={Colors.textSecondary} />
+          <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
       ) : isOwner ? (
         <View style={styles.ownerTag}>
-          <Ionicons name="shield-checkmark" size={16} color={Colors.warning} />
+          <Ionicons name="shield-checkmark" size={16} color={colors.warning} />
         </View>
       ) : null}
     </View>
@@ -110,7 +112,6 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
     borderRadius: 14,
     padding: 12,
     marginBottom: 8,
@@ -131,7 +132,6 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.white,
   },
   info: {
     flex: 1,
@@ -139,12 +139,10 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: 2,
   },
   email: {
     fontSize: 12,
-    color: Colors.textSecondary,
     marginBottom: 4,
   },
   badge: {

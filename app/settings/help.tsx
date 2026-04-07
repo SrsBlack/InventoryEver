@@ -10,7 +10,7 @@ import {
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../components/ui/Card';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 interface FaqItem {
   question: string;
@@ -42,6 +42,7 @@ const FAQ_ITEMS: FaqItem[] = [
 
 export default function HelpScreen() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const colors = useColors();
 
   const toggleFaq = (index: number) => {
     setExpandedIndex(prev => (prev === index ? null : index));
@@ -54,33 +55,33 @@ export default function HelpScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Help & Support' }} />
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
         <View style={styles.body}>
           {/* FAQ */}
           <View style={styles.sectionHeader}>
-            <Ionicons name="help-circle-outline" size={18} color={Colors.primary} style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>FAQ</Text>
+            <Ionicons name="help-circle-outline" size={18} color={colors.primary} style={styles.sectionIcon} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>FAQ</Text>
           </View>
           <Card variant="bordered" padding={0} style={styles.card}>
             {FAQ_ITEMS.map((item, index) => {
               const isExpanded = expandedIndex === index;
               const isLast = index === FAQ_ITEMS.length - 1;
               return (
-                <View key={index} style={[styles.faqItem, !isLast && styles.faqBorder]}>
+                <View key={index} style={[styles.faqItem, { backgroundColor: colors.surface }, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
                   <TouchableOpacity
                     onPress={() => toggleFaq(index)}
                     style={styles.faqQuestion}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.faqQuestionText}>{item.question}</Text>
+                    <Text style={[styles.faqQuestionText, { color: colors.textPrimary }]}>{item.question}</Text>
                     <Ionicons
                       name={isExpanded ? 'chevron-up' : 'chevron-down'}
                       size={18}
-                      color={Colors.textTertiary}
+                      color={colors.textTertiary}
                     />
                   </TouchableOpacity>
                   {isExpanded && (
-                    <Text style={styles.faqAnswer}>{item.answer}</Text>
+                    <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>{item.answer}</Text>
                   )}
                 </View>
               );
@@ -89,23 +90,23 @@ export default function HelpScreen() {
 
           {/* Contact */}
           <View style={styles.sectionHeader}>
-            <Ionicons name="mail-outline" size={18} color={Colors.primary} style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>Contact</Text>
+            <Ionicons name="mail-outline" size={18} color={colors.primary} style={styles.sectionIcon} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Contact</Text>
           </View>
           <Card variant="bordered" padding={0} style={styles.card}>
-            <TouchableOpacity onPress={handleEmail} style={[styles.contactRow, styles.rowBorder]} activeOpacity={0.7}>
-              <Ionicons name="mail" size={20} color={Colors.textSecondary} style={styles.contactIcon} />
+            <TouchableOpacity onPress={handleEmail} style={[styles.contactRow, { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.divider }]} activeOpacity={0.7}>
+              <Ionicons name="mail" size={20} color={colors.textSecondary} style={styles.contactIcon} />
               <View style={styles.contactInfo}>
-                <Text style={styles.contactLabel}>Email Support</Text>
-                <Text style={styles.contactValue}>support@inventoryever.app</Text>
+                <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Email Support</Text>
+                <Text style={[styles.contactValue, { color: colors.textPrimary }]}>support@inventoryever.app</Text>
               </View>
-              <Ionicons name="open-outline" size={16} color={Colors.textTertiary} />
+              <Ionicons name="open-outline" size={16} color={colors.textTertiary} />
             </TouchableOpacity>
-            <View style={styles.contactRow}>
-              <Ionicons name="information-circle" size={20} color={Colors.textSecondary} style={styles.contactIcon} />
+            <View style={[styles.contactRow, { backgroundColor: colors.surface }]}>
+              <Ionicons name="information-circle" size={20} color={colors.textSecondary} style={styles.contactIcon} />
               <View style={styles.contactInfo}>
-                <Text style={styles.contactLabel}>Version</Text>
-                <Text style={styles.contactValue}>InventoryEver v1.0.0</Text>
+                <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Version</Text>
+                <Text style={[styles.contactValue, { color: colors.textPrimary }]}>InventoryEver v1.0.0</Text>
               </View>
             </View>
           </Card>
@@ -116,7 +117,7 @@ export default function HelpScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   body: { padding: 16 },
   sectionHeader: {
     flexDirection: 'row',
@@ -128,11 +129,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.textPrimary,
   },
   card: { marginBottom: 20 },
-  faqItem: { backgroundColor: Colors.surface },
-  faqBorder: { borderBottomWidth: 1, borderBottomColor: Colors.divider },
+  faqItem: {},
   faqQuestion: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -143,11 +142,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.textPrimary,
   },
   faqAnswer: {
     fontSize: 14,
-    color: Colors.textSecondary,
     lineHeight: 20,
     paddingHorizontal: 16,
     paddingBottom: 14,
@@ -157,19 +154,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: Colors.surface,
   },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.divider },
   contactIcon: { marginRight: 12 },
   contactInfo: { flex: 1 },
   contactLabel: {
     fontSize: 14,
-    color: Colors.textSecondary,
     marginBottom: 2,
   },
   contactValue: {
     fontSize: 15,
     fontWeight: '500',
-    color: Colors.textPrimary,
   },
 });

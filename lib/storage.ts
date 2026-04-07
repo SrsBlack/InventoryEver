@@ -14,8 +14,13 @@ export async function uploadItemImage(
 
   let uploadData: Blob;
   if (typeof base64OrBlob === 'string') {
-    const response = await fetch(`data:image/jpeg;base64,${base64OrBlob}`);
-    uploadData = await response.blob();
+    // base64OrBlob is a raw base64 string (not a file URI)
+    const binaryStr = atob(base64OrBlob);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+    uploadData = new Blob([bytes], { type: 'image/jpeg' });
   } else {
     uploadData = base64OrBlob;
   }
