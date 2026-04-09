@@ -29,7 +29,7 @@ export function EmptyState({
   return (
     <View style={styles.container}>
       {icon && (
-        <View style={[styles.iconWrapper, { backgroundColor: colors.gray100, borderColor: colors.border }]}>
+        <View style={styles.iconWrapper}>
           {typeof icon === 'string' ? (
             <Text style={styles.iconText}>{icon}</Text>
           ) : icon}
@@ -76,35 +76,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
-    paddingVertical: 60,
+    paddingVertical: 28,
   },
   iconWrapper: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   iconText: {
-    fontSize: 40,
+    fontSize: 28,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 8,
   },
   description: {
-    fontSize: 15,
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
     marginBottom: 20,
   },
   bulletsContainer: {
     width: '100%',
-    borderRadius: 10,
+    borderRadius: 4,
     borderWidth: 1,
     padding: 16,
     marginBottom: 24,

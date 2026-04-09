@@ -68,8 +68,8 @@ export function SkeletonItemCard() {
         <View style={{ height: 10 }} />
         {/* Tag row */}
         <View style={styles.tagRow}>
-          <SkeletonBlock width={48} height={20} borderRadius={10} style={styles.tagBlock} />
-          <SkeletonBlock width={56} height={20} borderRadius={10} style={styles.tagBlock} />
+          <SkeletonBlock width={48} height={20} borderRadius={4} style={styles.tagBlock} />
+          <SkeletonBlock width={56} height={20} borderRadius={4} style={styles.tagBlock} />
         </View>
       </View>
     </View>
@@ -82,7 +82,7 @@ export function SkeletonAlertRow() {
   const colors = useColors();
   return (
     <View style={[styles.alertRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <SkeletonBlock width={40} height={40} borderRadius={20} />
+      <SkeletonBlock width={28} height={28} borderRadius={4} />
       <View style={styles.alertBody}>
         <SkeletonBlock width="60%" height={13} borderRadius={4} />
         <View style={{ height: 5 }} />
@@ -128,7 +128,7 @@ export function SkeletonDashboard() {
       {/* Header */}
       <View style={styles.dashHeader}>
         <SkeletonBlock width={120} height={24} borderRadius={6} />
-        <SkeletonBlock width={40} height={40} borderRadius={20} />
+        <SkeletonBlock width={28} height={28} borderRadius={4} />
       </View>
       {/* Stat cards */}
       <View style={styles.statsRow}>
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginHorizontal: 16,
     marginVertical: 4,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 1,
   },
   cardBody: {
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginHorizontal: 16,
     marginVertical: 4,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 1,
   },
   alertBody: {
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 1,
   },
   fullScreen: {

@@ -39,14 +39,14 @@ export function Badge({
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 3,
     alignSelf: 'flex-start',
   },
   sm: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
   },
   text: {
     fontSize: 12,

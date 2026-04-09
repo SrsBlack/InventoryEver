@@ -54,8 +54,15 @@ function TabIcon({ icon, iconOutline, label, focused }: { icon: IconName; iconOu
 function AddButton({ focused }: { focused: boolean }) {
   const colors = useColors();
   return (
-    <View style={[styles.addBtn, { backgroundColor: colors.primary }]}>
-      <Ionicons name="add" size={28} color="#FFFFFF" />
+    <View style={styles.tabIcon}>
+      <Ionicons name={focused ? 'add' : 'add-outline'} size={22} color={focused ? colors.primary : colors.gray500} />
+      <Text style={[
+        styles.tabLabel,
+        { color: focused ? colors.primary : colors.gray500 },
+        focused && styles.tabLabelActive,
+      ]}>
+        {'ADD'}
+      </Text>
     </View>
   );
 }
@@ -152,20 +159,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabLabel: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '600',
     marginTop: 2,
-    letterSpacing: 0.8,
+    letterSpacing: 0.3,
   },
   tabLabelActive: {
     fontWeight: '700',
-  },
-  addBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
   },
 });

@@ -137,10 +137,8 @@ export function LocationPicker({
         onLongPress={() => handleSelect(loc)}
         activeOpacity={0.7}
       >
-        {/* Emoji badge */}
-        <View style={[styles.emojiBadge, { backgroundColor: loc.color_hex + '33' }]}>
-          <Text style={styles.emojiText}>{loc.icon_emoji}</Text>
-        </View>
+        {/* Color dot */}
+        <View style={[styles.colorDot, { backgroundColor: loc.color_hex }]} />
 
         <View style={styles.rowTextWrap}>
           <Text style={[styles.rowName, { color: colors.textPrimary }]}>{loc.name}</Text>
@@ -173,7 +171,7 @@ export function LocationPicker({
       >
         {selectedLocation ? (
           <View style={styles.triggerContent}>
-            <Text style={styles.triggerEmoji}>{selectedLocation.icon_emoji}</Text>
+            <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
             <Text style={[styles.triggerText, { color: colors.textPrimary }]} numberOfLines={1}>
               {selectedLocation.full_path ?? selectedLocation.name}
             </Text>
@@ -327,13 +325,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 4,
     paddingHorizontal: 14,
     paddingVertical: 12,
     minHeight: 48,
   },
   triggerContent: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  triggerEmoji: { fontSize: 16 },
   triggerText: { fontSize: 14, flex: 1 },
   triggerPlaceholder: { fontSize: 14, flex: 1 },
 
@@ -344,8 +341,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     maxHeight: '80%',
     borderTopWidth: 1,
   },
@@ -370,7 +367,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 4,
-    borderRadius: 8,
+    borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
@@ -425,14 +422,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     gap: 12,
   },
-  emojiBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+  colorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  emojiText: { fontSize: 18 },
   rowTextWrap: { flex: 1 },
   rowName: { fontSize: 14, fontWeight: '600' },
   rowPath: { fontSize: 11, marginTop: 2 },

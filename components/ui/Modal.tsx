@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../hooks/useColors';
 
 interface ModalProps {
@@ -60,7 +61,7 @@ export function Modal({
                   accessibilityRole="button"
                   accessibilityLabel="Close"
                 >
-                  <Text style={[styles.closeIcon, { color: colors.textSecondary }]}>✕</Text>
+                  <Ionicons name="close" size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -88,15 +89,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   container: {
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 12,
   },
@@ -109,8 +110,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     flex: 1,
   },
   closeBtn: {
@@ -119,10 +120,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeIcon: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   body: {
     padding: 20,

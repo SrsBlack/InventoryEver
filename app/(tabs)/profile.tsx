@@ -171,7 +171,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       {/* Profile Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface, paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           onPress={() => router.push('/settings/edit-profile')}
           activeOpacity={0.8}
@@ -360,7 +360,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <View style={[styles.settingsCard, { backgroundColor: colors.surface }]}>
+        <View style={[styles.settingsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {([
             { iconName: 'notifications', label: 'Notifications', onPress: () => router.push('/settings/notifications') },
             { iconName: 'hand-left', label: 'Lending Tracker', onPress: () => router.push('/lending') },
@@ -506,7 +506,7 @@ function UpgradeModal({ onPro, onBusiness, colors }: { onPro: () => void; onBusi
             onPress={() => setBilling(b)}
           >
             <Text style={{ fontSize: 13, fontWeight: billing === b ? '700' : '500', color: billing === b ? colors.textPrimary : colors.textSecondary }}>
-              {b === 'monthly' ? 'Monthly' : 'Yearly  🎉 17% off'}
+              {b === 'monthly' ? 'Monthly' : 'Yearly  17% off'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -516,14 +516,14 @@ function UpgradeModal({ onPro, onBusiness, colors }: { onPro: () => void; onBusi
       <View style={{ borderRadius: 12, borderWidth: 2, borderColor: colors.primary, overflow: 'hidden', marginBottom: 12 }}>
         {/* Most popular badge */}
         <View style={{ backgroundColor: colors.primary, paddingVertical: 6, alignItems: 'center' }}>
-          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.white, letterSpacing: 1.5 }}>✦  MOST POPULAR  ✦</Text>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.white, letterSpacing: 1.5 }}>RECOMMENDED</Text>
         </View>
         <View style={{ padding: 16, backgroundColor: colors.surface }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
             <Ionicons name="star" size={20} color={colors.primary} style={{ marginRight: 8 }} />
             <Text style={{ fontSize: 20, fontWeight: '800', color: colors.textPrimary }}>Pro</Text>
           </View>
-          <Text style={{ fontSize: 26, fontWeight: '800', color: colors.primary, marginBottom: 4 }}>{proPrice}</Text>
+          <Text style={{ fontSize: 18, fontWeight: '800', color: colors.primary, marginBottom: 4 }}>{proPrice}</Text>
           {billing === 'yearly' && (
             <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 8 }}>billed ${(proMonthly * 12 * (1 - yearlyDiscount)).toFixed(0)}/year</Text>
           )}
@@ -538,7 +538,7 @@ function UpgradeModal({ onPro, onBusiness, colors }: { onPro: () => void; onBusi
             <Ionicons name="business" size={20} color={colors.warning} style={{ marginRight: 8 }} />
             <Text style={{ fontSize: 20, fontWeight: '800', color: colors.textPrimary }}>Business</Text>
           </View>
-          <Text style={{ fontSize: 26, fontWeight: '800', color: colors.warning, marginBottom: 4 }}>{businessPrice}</Text>
+          <Text style={{ fontSize: 18, fontWeight: '800', color: colors.warning, marginBottom: 4 }}>{businessPrice}</Text>
           {billing === 'yearly' && (
             <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 8 }}>billed ${(businessMonthly * 12 * (1 - yearlyDiscount)).toFixed(0)}/year</Text>
           )}
@@ -585,7 +585,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#252836',
   },
   avatar: {
     width: 48,
@@ -671,13 +670,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#252836',
   },
   settingsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    paddingVertical: 13,
+    paddingVertical: 10,
   },
   settingsIcon: { marginRight: 10 },
   settingsLabel: { flex: 1, fontSize: 14, fontWeight: '500' },
@@ -686,13 +684,13 @@ const styles = StyleSheet.create({
   editBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dangerZone: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 4,
     padding: 14,
     marginBottom: 16,
   },

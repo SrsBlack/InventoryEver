@@ -575,7 +575,7 @@ const filterStyles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 8,
     marginTop: 4,
-    letterSpacing: 1.5,
+    letterSpacing: 1,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
   chip: {
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    letterSpacing: 2,
+    letterSpacing: 1,
   },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
   cancelButton: {
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   barcodeScanBtn: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,

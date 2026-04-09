@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 6,
     paddingHorizontal: 14,
-    minHeight: 50,
+    minHeight: 44,
   },
   input: {
     flex: 1,
@@ -364,8 +364,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.35)',
   },
   sheet: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     borderTopWidth: 1,
     paddingBottom: 32,
   },

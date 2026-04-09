@@ -7,7 +7,6 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../hooks/useColors';
 
@@ -43,45 +42,15 @@ export function Button({
   const isDisabled = disabled || loading;
 
   const sizeStyles: Record<ButtonSize, { paddingH: number; paddingV: number; fontSize: number }> = {
-    sm: { paddingH: 12, paddingV: 8, fontSize: 13 },
-    md: { paddingH: 20, paddingV: 13, fontSize: 15 },
-    lg: { paddingH: 28, paddingV: 16, fontSize: 17 },
+    sm: { paddingH: 12, paddingV: 7, fontSize: 13 },
+    md: { paddingH: 16, paddingV: 9, fontSize: 15 },
+    lg: { paddingH: 20, paddingV: 11, fontSize: 17 },
   };
 
   const sz = sizeStyles[size];
 
-  if (variant === 'primary') {
-    return (
-      <TouchableOpacity
-        onPress={onPress}
-        disabled={isDisabled}
-        style={[{ borderRadius: 12, overflow: 'hidden', alignSelf: fullWidth ? 'stretch' : 'auto' }, style]}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel={title}
-        accessibilityState={{ disabled: isDisabled }}
-      >
-        <LinearGradient
-          colors={isDisabled ? [colors.gray300, colors.gray300] as [string, string] : colors.gradientPrimary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[{ paddingHorizontal: sz.paddingH, paddingVertical: sz.paddingV, alignItems: 'center', justifyContent: 'center' }]}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.white} size="small" />
-          ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-              {icon && <Ionicons name={icon as any} size={sz.fontSize} color={colors.white} style={{ marginRight: 6 }} />}
-              <Text style={[{ color: colors.white, fontWeight: '700', letterSpacing: 0.3, fontSize: sz.fontSize }, textStyle]}>{title}</Text>
-            </View>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  }
-
   const variantMap: Record<ButtonVariant, ViewStyle> = {
-    primary: {},
+    primary: { backgroundColor: colors.primary },
     secondary: { backgroundColor: colors.primaryLight + '22', borderColor: colors.primary, borderWidth: 1.5 },
     outline: { backgroundColor: 'transparent', borderColor: colors.primary, borderWidth: 1.5 },
     ghost: { backgroundColor: 'transparent' },
@@ -107,10 +76,10 @@ export function Button({
       accessibilityLabel={title}
       accessibilityState={{ disabled: isDisabled }}
       style={[
-        { borderRadius: 6, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+        { borderRadius: 4, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
         variantMap[variant],
         { paddingHorizontal: sz.paddingH, paddingVertical: sz.paddingV },
-        isDisabled && { opacity: 0.5 },
+        isDisabled && { opacity: 0.4 },
         fullWidth && { alignSelf: 'stretch' },
         style,
       ]}

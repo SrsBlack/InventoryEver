@@ -114,8 +114,6 @@ export default function SignIn() {
 
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.textTertiary }]}>OR</Text>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           <TouchableOpacity
@@ -148,7 +146,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   logoArea: {
-    paddingTop: 80,
+    paddingTop: 48,
     paddingBottom: 32,
     paddingHorizontal: 32,
     alignItems: 'center',
@@ -163,9 +161,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   appName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
-    letterSpacing: 3,
+    letterSpacing: 1,
     marginBottom: 6,
   },
   tagline: {
@@ -205,17 +203,9 @@ const styles = StyleSheet.create({
   forgotBtn: { alignItems: 'flex-end', marginTop: 8, marginBottom: 24 },
   forgotText: { fontSize: 13, fontWeight: '500' },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginVertical: 20,
   },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: {
-    marginHorizontal: 12,
-    fontSize: 11,
-    letterSpacing: 1,
-    fontWeight: '600',
-  },
+  dividerLine: { height: StyleSheet.hairlineWidth },
   signUpBtn: { alignItems: 'center' },
   signUpText: { fontSize: 14 },
   signUpLink: { fontWeight: '700' },

@@ -48,7 +48,7 @@ export function Input({
         style={[
           styles.inputWrapper,
           { borderColor: colors.border, backgroundColor: colors.gray100 },
-          focused && { borderColor: colors.primary, shadowColor: colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 2 },
+          focused && { borderColor: colors.primary },
           !!error && { borderColor: colors.error },
         ]}
       >
@@ -96,12 +96,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 4,
     paddingHorizontal: 14,
   },
   input: {
     flex: 1,
-    paddingVertical: 13,
+    paddingVertical: 10,
     fontSize: 15,
   },
   inputWithIcon: {

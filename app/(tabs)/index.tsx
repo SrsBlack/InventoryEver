@@ -75,8 +75,6 @@ export default function HomeScreen() {
   const recentItems = items.slice(0, 5);
 
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there';
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   if (loading && items.length === 0) return <SkeletonDashboard />;
 
@@ -97,7 +95,7 @@ export default function HomeScreen() {
       <View style={[styles.header, { backgroundColor: colors.surface, paddingTop: insets.top + 8 }]}>
         <View style={styles.headerContent}>
           <View>
-            <Text style={[styles.greeting, { color: colors.textSecondary }]}>{greeting}, {firstName}</Text>
+            <Text style={[styles.greeting, { color: colors.textSecondary }]}>{firstName}</Text>
             <Text style={[styles.workspaceName, { color: colors.textPrimary }]}>
               {(activeWorkspace?.name ?? 'MY WORKSPACE').toUpperCase()}
             </Text>
@@ -149,31 +147,34 @@ export default function HomeScreen() {
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>QUICK ACTIONS</Text>
         <View style={styles.quickActions}>
           <TouchableOpacity
-            style={[styles.quickAction, { borderColor: colors.border }]}
+            style={styles.quickAction}
             onPress={() => router.push('/(tabs)/add-item')}
           >
-            <Ionicons name="add-circle" size={24} color={colors.primary} style={styles.quickActionIcon} />
+            <Ionicons name="add-circle" size={14} color={colors.primary} />
             <Text style={[styles.quickActionLabel, { color: colors.textSecondary }]}>Add Item</Text>
           </TouchableOpacity>
+          <Text style={[styles.quickActionDivider, { color: colors.border }]}>|</Text>
           <TouchableOpacity
-            style={[styles.quickAction, { borderColor: colors.border }]}
+            style={styles.quickAction}
             onPress={() => router.push('/(tabs)/inventory')}
           >
-            <Ionicons name="search" size={24} color={colors.accent} style={styles.quickActionIcon} />
+            <Ionicons name="search" size={14} color={colors.accent} />
             <Text style={[styles.quickActionLabel, { color: colors.textSecondary }]}>Search</Text>
           </TouchableOpacity>
+          <Text style={[styles.quickActionDivider, { color: colors.border }]}>|</Text>
           <TouchableOpacity
-            style={[styles.quickAction, { borderColor: colors.border }]}
+            style={styles.quickAction}
             onPress={() => router.push('/(tabs)/alerts')}
           >
-            <Ionicons name="notifications" size={24} color={colors.warning} style={styles.quickActionIcon} />
+            <Ionicons name="notifications" size={14} color={colors.warning} />
             <Text style={[styles.quickActionLabel, { color: colors.textSecondary }]}>Alerts</Text>
           </TouchableOpacity>
+          <Text style={[styles.quickActionDivider, { color: colors.border }]}>|</Text>
           <TouchableOpacity
-            style={[styles.quickAction, { borderColor: colors.border }]}
+            style={styles.quickAction}
             onPress={() => router.push('/settings/maintenance')}
           >
-            <Ionicons name="build" size={24} color={colors.info} style={styles.quickActionIcon} />
+            <Ionicons name="build" size={14} color={colors.info} />
             <Text style={[styles.quickActionLabel, { color: colors.textSecondary }]}>Maint.</Text>
           </TouchableOpacity>
         </View>
@@ -236,13 +237,7 @@ export default function HomeScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.itemRowContent}>
-                    <View style={[styles.itemEmoji, { backgroundColor: colors.gray200 }]}>
-                      {item.category?.icon_emoji ? (
-                        <Text>{item.category.icon_emoji}</Text>
-                      ) : (
-                        <Ionicons name="cube-outline" size={20} color={colors.gray500} />
-                      )}
-                    </View>
+                    <View style={[styles.itemDot, { backgroundColor: catColor }]} />
                     <View style={styles.itemInfo}>
                       <Text style={[styles.itemName, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
                       <Text style={[styles.itemMeta, { color: colors.textTertiary }]}>
@@ -297,9 +292,7 @@ export default function HomeScreen() {
 
         {items.length === 0 && !loading && (
           <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={[styles.emptyIconWrap, { backgroundColor: colors.primary + '15' }]}>
-              <Ionicons name="cube-outline" size={48} color={colors.primary} />
-            </View>
+            <Ionicons name="cube-outline" size={28} color={colors.primary} style={{ marginBottom: 16 }} />
             <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Your inventory awaits</Text>
             <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
               Track everything you own — at home, in the office, or across your business.
@@ -407,7 +400,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     marginBottom: 10,
-    letterSpacing: 1.5,
+    letterSpacing: 1,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -419,20 +412,17 @@ const styles = StyleSheet.create({
   seeAll: { fontSize: 13, fontWeight: '600' },
   quickActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
     gap: 8,
   },
   quickAction: {
-    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderRadius: 6,
-    borderWidth: 1,
+    gap: 4,
   },
-  quickActionIcon: { marginBottom: 4 },
-  quickActionLabel: { fontSize: 10, fontWeight: '600' },
+  quickActionDivider: { fontSize: 14, fontWeight: '300' },
+  quickActionLabel: { fontSize: 12, fontWeight: '600' },
   alertCard: {
     marginBottom: 8,
     padding: 12,
@@ -451,12 +441,10 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   itemRowContent: { flexDirection: 'row', alignItems: 'center' },
-  itemEmoji: {
-    width: 36,
-    height: 36,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
+  itemDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     marginRight: 10,
   },
   itemInfo: { flex: 1 },
@@ -468,16 +456,8 @@ const styles = StyleSheet.create({
     paddingVertical: 36,
     paddingHorizontal: 20,
     marginTop: 8,
-    borderRadius: 12,
+    borderRadius: 4,
     borderWidth: 1,
-  },
-  emptyIconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
   },
   emptyTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
   emptyDesc: {
@@ -501,7 +481,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 28,
     paddingVertical: 13,
-    borderRadius: 10,
+    borderRadius: 4,
     width: '100%',
     marginBottom: 10,
   },
@@ -512,7 +492,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     paddingVertical: 11,
-    borderRadius: 10,
+    borderRadius: 4,
     borderWidth: 1,
     width: '100%',
   },

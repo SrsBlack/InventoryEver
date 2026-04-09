@@ -84,7 +84,7 @@ export default function AddItemScreen() {
 
       await incrementUsage('items_count');
 
-      Alert.alert('Success! 🎉', 'Item added to your inventory.', [
+      Alert.alert('Success', 'Item added to your inventory.', [
         { text: 'Add Another', onPress: () => {} },
         { text: 'View Inventory', onPress: () => router.push('/(tabs)/inventory') },
       ]);
@@ -121,5 +121,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
   },
-  headerTitle: { fontSize: 28, fontWeight: '800' },
+  headerTitle: { fontSize: 18, fontWeight: '800' },
 });
