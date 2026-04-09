@@ -123,7 +123,7 @@ export function useLending(workspaceId: string | undefined) {
     if (data.borrower_name) {
       const { data: existing } = await supabase
         .from('borrower_profiles')
-        .select('id')
+        .select('id, total_borrowed')
         .eq('workspace_id', workspaceId)
         .ilike('name', data.borrower_name)
         .maybeSingle();

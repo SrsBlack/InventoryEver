@@ -74,9 +74,9 @@ export const DarkColors = {
   divider: '#1A1D27',
 
   // Gradients
-  gradientPrimary: ['#1D4ED8', '#3B82F6'] as string[],
-  gradientSecondary: ['#6D28D9', '#8B5CF6'] as string[],
-  gradientSuccess: ['#059669', '#10B981'] as string[],
-  gradientWarning: ['#D97706', '#F59E0B'] as string[],
-  gradientDark: ['#0F1117', '#1A1D27'] as string[],
+  gradientPrimary: ['#1D4ED8', '#3B82F6'] as [string, string],
+  gradientSecondary: ['#6D28D9', '#8B5CF6'] as [string, string],
+  gradientSuccess: ['#059669', '#10B981'] as [string, string],
+  gradientWarning: ['#D97706', '#F59E0B'] as [string, string],
+  gradientDark: ['#0F1117', '#1A1D27'] as [string, string],
 } as const;

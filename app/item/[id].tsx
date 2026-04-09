@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ViewStyle,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -308,7 +309,7 @@ export default function ItemDetailScreen() {
         <Card
           variant="bordered"
           padding={16}
-          style={[styles.warrantyCard, { borderColor: warranty.color }]}
+          style={[styles.warrantyCard, { borderColor: warranty.color }] as unknown as ViewStyle}
         >
           <View style={styles.warrantyRow}>
             <View style={styles.warrantyIconWrapper}>

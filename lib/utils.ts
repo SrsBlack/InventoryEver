@@ -117,9 +117,9 @@ export function randomColor(): string {
 /**
  * Debounce a function.
  */
-export function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): T {
+export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
   let timer: ReturnType<typeof setTimeout>;
-  return ((...args: unknown[]) => {
+  return ((...args: any[]) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), delay);
   }) as T;

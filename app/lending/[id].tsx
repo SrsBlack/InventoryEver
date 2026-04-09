@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  TextStyle,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -86,7 +87,7 @@ export default function LendingDetailScreen() {
           title: 'Lending Detail',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.textPrimary,
-          headerTitleStyle: { fontWeight: '700', letterSpacing: 1 },
+          headerTitleStyle: { fontWeight: '700', letterSpacing: 1 } as any,
           headerRight: () => (
             <TouchableOpacity onPress={handleDelete} style={{ marginRight: 16 }}>
               <Ionicons name="trash-outline" size={20} color={colors.error} />

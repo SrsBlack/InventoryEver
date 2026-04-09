@@ -8,6 +8,7 @@ import {
   FlatList,
   Image,
   RefreshControl,
+  TextStyle,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -105,7 +106,7 @@ export default function LendingScreen() {
           title: 'Lending Tracker',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.textPrimary,
-          headerTitleStyle: { fontWeight: '700', letterSpacing: 1 },
+          headerTitleStyle: { fontWeight: '700', letterSpacing: 1 } as any,
           headerRight: () => (
             <TouchableOpacity onPress={() => router.push('/lending/lend')} style={{ marginRight: 16 }}>
               <Ionicons name="add-circle" size={24} color={colors.primary} />

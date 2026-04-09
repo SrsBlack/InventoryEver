@@ -38,7 +38,7 @@ export default function ManageCollectionScreen() {
   const { user } = useAuthContext();
   const { activeWorkspace } = useWorkspaceContext();
   const { collections, createCollection, updateCollection } = useCollections(activeWorkspace?.id);
-  const { categories } = useCategories(activeWorkspace?.id);
+  const { categories } = useCategories(activeWorkspace?.id ?? null);
 
   const existing = id ? collections.find(c => c.id === id) : undefined;
   const isEditing = !!existing;

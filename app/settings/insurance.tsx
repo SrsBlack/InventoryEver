@@ -48,7 +48,7 @@ const GROUP_OPTIONS: { value: GroupBy; label: string; icon: React.ComponentProps
 export default function InsuranceScreen() {
   const { activeWorkspace } = useWorkspaceContext();
   const { items, hasMore, loading, loadMore } = useItems(activeWorkspace?.id);
-  const { categories } = useCategories(activeWorkspace?.id);
+  const { categories } = useCategories(activeWorkspace?.id ?? null);
   const colors = useColors();
 
   // Exhaust pagination

@@ -11,7 +11,7 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { Clipboard } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkspaceContext } from '../../contexts/WorkspaceContext';
@@ -212,8 +212,8 @@ export default function LocationDetailScreen() {
               <Text style={styles.qrToken}>{location.qr_code_token}</Text>
               <TouchableOpacity
                 style={styles.copyBtn}
-                onPress={async () => {
-                  await Clipboard.setStringAsync(location.qr_code_token);
+                onPress={() => {
+                  Clipboard.setString(location.qr_code_token);
                   Alert.alert('Copied', 'QR token copied to clipboard.');
                 }}
               >

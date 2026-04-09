@@ -8,6 +8,7 @@
  */
 
 import * as Notifications from 'expo-notifications';
+import { SchedulableTriggerInputTypes } from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
@@ -106,7 +107,7 @@ export async function scheduleWarrantyReminder(
       data: { type: 'warranty', itemId },
       sound: true,
     },
-    trigger: { date: triggerDate },
+    trigger: { type: SchedulableTriggerInputTypes.DATE, date: triggerDate },
   });
 }
 
@@ -124,7 +125,7 @@ export async function scheduleMaintenanceReminder(
       data: { type: 'maintenance', itemId },
       sound: true,
     },
-    trigger: { date: scheduledDate },
+    trigger: { type: SchedulableTriggerInputTypes.DATE, date: scheduledDate },
   });
 }
 

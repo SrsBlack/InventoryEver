@@ -37,7 +37,7 @@ export async function shareItemAsFile(item: Item, format: 'json' | 'csv' = 'json
       }
       return str;
     };
-    const values = headers.map(h => escapeCSV((item as Record<string, unknown>)[h]));
+    const values = headers.map(h => escapeCSV((item as unknown as Record<string, unknown>)[h]));
     await FileSystem.writeAsStringAsync(path, headers.join(',') + '\n' + values.join(','));
   }
 

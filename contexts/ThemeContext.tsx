@@ -40,7 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isDark = theme === 'dark' || (theme === 'system' && systemScheme === 'dark');
-  const colors = isDark ? DarkColors : LightColors;
+  const colors = (isDark ? DarkColors : LightColors) as typeof LightColors;
 
   if (!loaded) return null;
 

@@ -62,7 +62,7 @@ export function Button({
         accessibilityState={{ disabled: isDisabled }}
       >
         <LinearGradient
-          colors={isDisabled ? [colors.gray300, colors.gray300] : colors.gradientPrimary}
+          colors={isDisabled ? [colors.gray300, colors.gray300] as [string, string] : colors.gradientPrimary}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[{ paddingHorizontal: sz.paddingH, paddingVertical: sz.paddingV, alignItems: 'center', justifyContent: 'center' }]}

@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  TextStyle,
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -130,7 +131,7 @@ export default function LendItemScreen() {
           title: 'Lend Item',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.textPrimary,
-          headerTitleStyle: { fontWeight: '700', letterSpacing: 1 },
+          headerTitleStyle: { fontWeight: '700', letterSpacing: 1 } as any,
         }}
       />
 
