@@ -108,6 +108,9 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const { checkLimit } = useSubscription(userId);
+  // FIX(audit-2026-05-09 #I6) — guard setState calls after async operations against unmounted component
+  const isMounted = useRef(true);
+  React.useEffect(() => () => { isMounted.current = false; }, []);
 
   const update = (field: keyof AddItemFormData, value: string | number | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -136,11 +139,13 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
     try {
       // Upload image
       const publicUrl = await uploadItemImage(userId, asset.base64 ?? asset.uri);
+      if (!isMounted.current) return;
       update('main_image_url', publicUrl);
 
       // Run AI recognition
       if (asset.base64) {
         const suggestion = await recognizeProductFromImage(asset.base64);
+        if (!isMounted.current) return;
         setFormData(prev => ({
           ...prev,
           name: suggestion.name || prev.name,
@@ -156,6 +161,7 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
         analytics.track('ai_suggestion_applied', { confidence: suggestion.confidence });
       }
     } catch (err) {
+      if (!isMounted.current) return;
       Alert.alert(
         'AI Processing',
         'Could not auto-fill from image. Please fill in details manually.',
@@ -163,7 +169,7 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
       );
       analytics.track('ai_recognition_failed');
     } finally {
-      setAiLoading(false);
+      if (isMounted.current) setAiLoading(false);
     }
   };
 
@@ -180,10 +186,12 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
 
     try {
       const publicUrl = await uploadItemImage(userId, asset.base64 ?? asset.uri);
+      if (!isMounted.current) return;
       update('receipt_image_url', publicUrl);
 
       if (asset.base64) {
         const receiptData = await parseReceipt(asset.base64);
+        if (!isMounted.current) return;
         setFormData(prev => ({
           ...prev,
           name: prev.name || `${receiptData.merchant} Purchase`,
@@ -193,11 +201,11 @@ export function AddItemForm({ workspaceId, userId, categories, onItemAdded, onCa
         }));
         analytics.track('receipt_scanned', { merchant: receiptData.merchant });
       }
-      setStep('form');
+      if (isMounted.current) setStep('form');
     } catch {
-      Alert.alert('Receipt Scan', 'Could not read receipt. Please fill in details manually.');
+      if (isMounted.current) Alert.alert('Receipt Scan', 'Could not read receipt. Please fill in details manually.');
     } finally {
-      setAiLoading(false);
+      if (isMounted.current) setAiLoading(false);
     }
   };
 

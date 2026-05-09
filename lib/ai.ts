@@ -1,5 +1,26 @@
+import { z } from 'zod';
 import { supabase } from './supabase';
 import type { AIItemSuggestion, ReceiptData } from '../types';
+
+// FIX(audit-2026-05-09 #I8) — Zod schemas for AI response boundaries; prevents unknown→number crashes
+const AIItemSuggestionSchema = z.object({
+  name: z.string().optional(),
+  category: z.string().optional(),
+  brand: z.string().optional(),
+  model: z.string().optional(),
+  description: z.string().optional(),
+  estimated_value: z.number().optional(),
+  confidence: z.number().optional(),
+});
+
+const VoiceExtractionSchema = z.object({
+  name: z.string().optional(),
+  quantity: z.number().optional(),
+  location: z.string().optional(),
+  brand: z.string().optional(),
+  estimated_value: z.number().optional(),
+  description: z.string().optional(),
+});
 
 // All AI calls are proxied through the Supabase Edge Function 'process-ai-request'.
 // API keys live server-side — never in the client bundle.
@@ -63,21 +84,21 @@ export async function recognizeProductFromImage(
     max_tokens: 300,
   });
 
-  let parsed: Record<string, unknown>;
+  let parsed: z.infer<typeof AIItemSuggestionSchema>;
   try {
-    parsed = JSON.parse(gptData.choices[0].message.content);
+    parsed = AIItemSuggestionSchema.parse(JSON.parse(gptData.choices[0].message.content));
   } catch {
     parsed = {};
   }
 
   return {
-    name: (parsed.name as string) ?? 'Unknown Item',
-    category: (parsed.category as string) ?? 'Other',
-    brand: (parsed.brand as string) ?? undefined,
-    model: (parsed.model as string) ?? undefined,
-    description: (parsed.description as string) ?? undefined,
-    estimated_value: (parsed.estimated_value as number) ?? undefined,
-    confidence: (parsed.confidence as number) ?? 0.5,
+    name: parsed.name ?? 'Unknown Item',
+    category: parsed.category ?? 'Other',
+    brand: parsed.brand ?? undefined,
+    model: parsed.model ?? undefined,
+    description: parsed.description ?? undefined,
+    estimated_value: parsed.estimated_value ?? undefined,
+    confidence: parsed.confidence ?? 0.5,
   };
 }
 
@@ -127,14 +148,14 @@ export async function transcribeVoiceToItem(
   // Fetch audio and convert to base64 to send through Edge Function
   const response = await fetch(audioUri);
   const audioBuffer = await response.arrayBuffer();
-  // Chunked base64 encoding to avoid stack overflow on large audio buffers
+  // FIX(audit-2026-05-09 #3) — build binary string in chunks then btoa once; was double-encoding
   const bytes = new Uint8Array(audioBuffer);
-  let audioBase64 = '';
+  let audioBinary = '';
   const chunkSize = 8192;
   for (let i = 0; i < bytes.length; i += chunkSize) {
-    audioBase64 += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    audioBinary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
   }
-  audioBase64 = btoa(audioBase64);
+  const audioBase64 = btoa(audioBinary);
 
   // Step 1: Transcribe via Whisper
   const transcribeData = await invokeAI<{ text: string }>('whisper', { audio: audioBase64 });
@@ -156,7 +177,7 @@ export async function transcribeVoiceToItem(
   });
 
   try {
-    return JSON.parse(extractData.choices[0].message.content);
+    return VoiceExtractionSchema.parse(JSON.parse(extractData.choices[0].message.content));
   } catch {
     return {};
   }

@@ -1,15 +1,16 @@
 // Supabase Edge Function — send scheduled push notifications
+// FIX(audit-2026-05-09 #7) — removed hardcoded project ref senmpagpravittvayecz
 //
 // Designed to be called by a Supabase cron job (pg_cron) once per day:
 //   SELECT cron.schedule('daily-push', '0 9 * * *', $$
 //     SELECT net.http_post(
-//       url := 'https://senmpagpravittvayecz.supabase.co/functions/v1/send-push-notifications',
-//       headers := '{"Authorization": "Bearer <SERVICE_ROLE_KEY>"}',
-//       body := '{}'
+//       url := '<your-project-ref>.supabase.co/functions/v1/send-push-notifications',
+//       headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.service_role_key', true), 'Content-Type', 'application/json'),
+//       body := '{}'::jsonb
 //     );
 //   $$);
 //
-// Or triggered manually via: supabase functions invoke send-push-notifications --project-ref senmpagpravittvayecz
+// Or triggered manually via: supabase functions invoke send-push-notifications --project-ref <your-project-ref>
 //
 // Sends:
 //   - Warranty expiring in ≤ 7 days
@@ -35,23 +36,49 @@ interface ExpoPushMessage {
   badge?: number;
 }
 
-async function sendPushBatch(messages: ExpoPushMessage[]): Promise<void> {
+// FIX(audit-2026-05-09 #6) — check Expo receipts and delete DeviceNotRegistered tokens
+async function sendPushBatch(
+  messages: ExpoPushMessage[],
+  supabase: ReturnType<typeof createClient>
+): Promise<void> {
   if (messages.length === 0) return;
 
   // Expo push API accepts batches of up to 100
   for (let i = 0; i < messages.length; i += 100) {
     const batch = messages.slice(i, i + 100);
-    await fetch(EXPO_PUSH_API, {
+    const res = await fetch(EXPO_PUSH_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(batch),
     });
+
+    const json = await res.json() as { data?: Array<{ status: string; details?: { error?: string } }> };
+    const tickets = json.data ?? [];
+    const deadTokens: string[] = [];
+
+    tickets.forEach((ticket, idx) => {
+      if (ticket.details?.error === 'DeviceNotRegistered') {
+        const to = batch[idx]?.to;
+        if (typeof to === 'string') deadTokens.push(to);
+      }
+    });
+
+    if (deadTokens.length > 0) {
+      await supabase.from('device_tokens').delete().in('token', deadTokens);
+    }
   }
 }
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  // FIX(audit-2026-05-09 #I1) — require service-role or CRON_SECRET to prevent unauthenticated DoS
+  const authHeader = req.headers.get('Authorization');
+  const expected = `Bearer ${Deno.env.get('CRON_SECRET') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`;
+  if (!authHeader || authHeader !== expected) {
+    return new Response('Unauthorized', { status: 401 });
   }
 
   const supabase = createClient(
@@ -203,7 +230,7 @@ serve(async (req: Request) => {
   }
 
   // ── Send all messages ─────────────────────────────────────────────────────
-  await sendPushBatch(messages);
+  await sendPushBatch(messages, supabase);
 
   return new Response(
     JSON.stringify({ sent: messages.length }),

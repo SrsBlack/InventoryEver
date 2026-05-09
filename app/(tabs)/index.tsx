@@ -65,7 +65,8 @@ export default function HomeScreen() {
     }
   };
 
-  const totalValue = items.reduce((sum, item) => sum + (item.purchase_price ?? 0) * item.quantity, 0);
+  // FIX(audit-2026-05-09 #4) — use current_value (depreciation-aware) before falling back to purchase_price
+  const totalValue = items.reduce((sum, item) => sum + (item.current_value ?? item.purchase_price ?? 0) * item.quantity, 0);
   const warrantyWarnings = items.filter(i => {
     const d = warrantyStatus(i.warranty_expiry_date);
     return d.label !== 'No warranty' && d.label !== 'Valid' && d.label !== 'Expired';

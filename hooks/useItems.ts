@@ -170,7 +170,8 @@ export function useItems(workspaceId: string | undefined, filters?: ItemFilters)
 
     fetchItems(true);
 
-    const subscription = supabase
+    // FIX(audit-2026-05-09 #I4) — hold channel ref and use removeChannel to avoid ghost subscriptions
+    const channel = supabase
       .channel(`items:${workspaceId}`)
       .on(
         'postgres_changes',
@@ -203,7 +204,7 @@ export function useItems(workspaceId: string | undefined, filters?: ItemFilters)
       )
       .subscribe();
 
-    return () => { subscription.unsubscribe(); };
+    return () => { supabase.removeChannel(channel); };
   }, [workspaceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addItem = useCallback(async (itemData: Partial<Item>): Promise<Item> => {

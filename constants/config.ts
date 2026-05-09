@@ -15,7 +15,8 @@ export const Config = {
   revenueCatIosKey: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? '',
   revenueCatAndroidKey: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? '',
 
-  // Analytics (optional)
+  // Analytics (optional) — FIX(audit-2026-05-09 #8): SDKs not yet installed; wire before enabling
+  // TODO(I-followup): install posthog-react-native and @sentry/react-native then remove these comments
   posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '',
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
 

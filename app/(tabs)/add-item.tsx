@@ -31,6 +31,8 @@ export default function AddItemScreen() {
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  // FIX(audit-2026-05-09 #5) — formKey increment forces AddItemForm to remount with fresh state
+  const [formKey, setFormKey] = useState(0);
 
   React.useEffect(() => {
     const load = async () => {
@@ -85,7 +87,7 @@ export default function AddItemScreen() {
       await incrementUsage('items_count');
 
       Alert.alert('Success', 'Item added to your inventory.', [
-        { text: 'Add Another', onPress: () => {} },
+        { text: 'Add Another', onPress: () => setFormKey(k => k + 1) },
         { text: 'View Inventory', onPress: () => router.push('/(tabs)/inventory') },
       ]);
     } catch (err) {
@@ -103,6 +105,7 @@ export default function AddItemScreen() {
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Add Item</Text>
       </View>
       <AddItemForm
+        key={formKey}
         workspaceId={activeWorkspace?.id ?? ''}
         userId={user?.id ?? ''}
         categories={categories}

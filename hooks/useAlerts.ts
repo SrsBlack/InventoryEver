@@ -51,7 +51,8 @@ export function useAlerts(workspaceId: string | undefined) {
 
   useEffect(() => {
     if (!workspaceId) return;
-    const sub = supabase
+    // FIX(audit-2026-05-09 #I4) — hold channel ref and use removeChannel to avoid ghost subscriptions
+    const channel = supabase
       .channel(`alerts:${workspaceId}`)
       .on(
         'postgres_changes',
@@ -75,7 +76,7 @@ export function useAlerts(workspaceId: string | undefined) {
         }
       )
       .subscribe();
-    return () => { sub.unsubscribe(); };
+    return () => { supabase.removeChannel(channel); };
   }, [workspaceId]);
 
   const markRead = useCallback(async (alertId: string) => {

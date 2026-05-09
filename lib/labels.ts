@@ -55,6 +55,7 @@ export const DEFAULT_LABEL_OPTIONS: LabelOptions = {
 
 // ─── HTML generators ──────────────────────────────────────────────────────────
 
+// FIX(audit-2026-05-09 #I12) — condition and quantity are now escaped via esc() in all templates
 function esc(s: string | undefined | null): string {
   if (!s) return '';
   return s
@@ -104,7 +105,7 @@ function fullLabelHtml(item: Item, opts: LabelOptions): string {
           ${opts.showPrice && item.purchase_price ? `<div class="price">${formatPrice(item.purchase_price, item.currency)}</div>` : ''}
           ${opts.showLocation && item.location_data?.full_path ? `<div class="meta">📍 ${esc(item.location_data.full_path)}</div>` : ''}
           ${opts.showSerial && item.serial_number ? `<div class="meta">SN: ${esc(item.serial_number)}</div>` : ''}
-          <div class="condition-badge condition-${item.condition}">${item.condition.toUpperCase()}</div>
+          <div class="condition-badge condition-${esc(item.condition)}">${esc(item.condition).toUpperCase()}</div>
         </div>
       </div>
       <div class="full-bottom">
@@ -124,13 +125,13 @@ function shelfTagHtml(item: Item, opts: LabelOptions): string {
         <div class="name">${esc(item.name)}</div>
         <div class="shelf-row">
           ${item.brand ? `<span class="chip">${esc(item.brand)}</span>` : ''}
-          <span class="chip condition-${item.condition}">${item.condition}</span>
+          <span class="chip condition-${esc(item.condition)}">${esc(item.condition)}</span>
           ${opts.showPrice && item.purchase_price ? `<span class="chip price">${formatPrice(item.purchase_price, item.currency)}</span>` : ''}
         </div>
         ${opts.showLocation && (item.location_data?.name || item.location) ? `<div class="meta">📍 ${esc(item.location_data?.name ?? item.location)}</div>` : ''}
       </div>
       <div class="shelf-qty">
-        <div class="qty-num">${item.quantity}</div>
+        <div class="qty-num">${esc(String(item.quantity))}</div>
         <div class="qty-unit">${esc(item.unit)}</div>
       </div>
     </div>`;

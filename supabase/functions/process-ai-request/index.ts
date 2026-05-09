@@ -1,7 +1,8 @@
 // Supabase Edge Function — AI request proxy
 // Keeps API keys server-side; validates user JWT before proxying.
-// Deploy: supabase functions deploy process-ai-request --project-ref senmpagpravittvayecz
-// Set secrets: supabase secrets set OPENAI_API_KEY=... GOOGLE_VISION_API_KEY=... --project-ref senmpagpravittvayecz
+// FIX(audit-2026-05-09 #7) — removed hardcoded project ref senmpagpravittvayecz
+// Deploy: supabase functions deploy process-ai-request --project-ref <your-project-ref>
+// Set secrets: supabase secrets set OPENAI_API_KEY=... GOOGLE_VISION_API_KEY=... --project-ref <your-project-ref>
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -44,6 +45,35 @@ serve(async (req: Request) => {
       type: 'vision' | 'gpt' | 'whisper' | 'veryfi';
       payload: Record<string, unknown>;
     };
+
+    // FIX(audit-2026-05-09 #I3) — enforce per-user daily AI cost ceiling (100 requests/day)
+    const serviceSupabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+    const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+    const { count: usageCount } = await serviceSupabase
+      .from('usage_tracking')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('feature', 'ai_request')
+      .gte('created_at', oneDayAgo);
+    const AI_DAILY_LIMIT = 100;
+    if ((usageCount ?? 0) >= AI_DAILY_LIMIT) {
+      return new Response(
+        JSON.stringify({ error: 'Daily AI request limit reached. Try again tomorrow.' }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+            'Retry-After': '86400',
+          },
+        }
+      );
+    }
+    // Record this usage before doing AI work
+    await serviceSupabase.from('usage_tracking').insert({ user_id: user.id, feature: 'ai_request' });
 
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
     const googleVisionKey = Deno.env.get('GOOGLE_VISION_API_KEY');
